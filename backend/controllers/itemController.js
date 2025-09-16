@@ -1,5 +1,6 @@
 const Item = require('../models/Item');
 const Bid = require('../models/Bid');
+const upload = require('../middleware/upload');
 
 // Add item
 exports.addItem = async (req, res) => {
@@ -253,40 +254,38 @@ exports.getItemBids = async (req, res) => {
 
 // Upload images for item
 exports.uploadImages = async (req, res) => {
-  try {
-    const item = await Item.findById(req.params.id);
-    if (!item) {
-      return res.status(404).json({ message: 'Item not found.' });
-    }
-    
-    if (item.seller.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: 'Forbidden.' });
-    }
-    
-    const upload = req.app.locals.upload;
-    
-    upload.array('images', 5)(req, res, async (err) => {
-      if (err) {
-        return res.status(400).json({ message: err.message });
+    try {
+      const item = await Item.findById(req.params.id);
+      if (!item) {
+        return res.status(404).json({ message: 'Item not found.' });
       }
       
-      if (!req.files || req.files.length === 0) {
-        return res.status(400).json({ message: 'No images uploaded.' });
+      if (item.seller.toString() !== req.user._id.toString()) {
+        return res.status(403).json({ message: 'Forbidden.' });
       }
-      
-      const imageUrls = req.files.map(file => `/uploads/${file.filename}`);
-      
-      // Add new images to existing ones
-      item.images = [...item.images, ...imageUrls];
-      await item.save();
-      
-      res.json({ 
-        message: 'Images uploaded successfully.',
-        images: item.images 
+  
+      upload.array('images', 5)(req, res, async (err) => {
+        if (err) {
+          return res.status(400).json({ message: err.message });
+        }
+        
+        if (!req.files || req.files.length === 0) {
+          return res.status(400).json({ message: 'No images uploaded.' });
+        }
+        
+        const imageUrls = req.files.map(file => file.path); // Get URLs from Cloudinary
+        
+        // Add new images to existing ones
+        item.images = [...item.images, ...imageUrls];
+        await item.save();
+        
+        res.json({ 
+          message: 'Images uploaded successfully.',
+          images: item.images 
+        });
       });
-    });
-  } catch (error) {
-    console.error('Upload images error:', error);
-    res.status(500).json({ message: 'Server error.' });
-  }
-}; 
+    } catch (error) {
+      console.error('Upload images error:', error);
+      res.status(500).json({ message: 'Server error.' });
+    }
+};

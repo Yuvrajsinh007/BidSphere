@@ -303,7 +303,7 @@ const Account = () => {
           <div className="profile-pic-container">
             {profilePicPreview ? (
               <img 
-                src={`http://localhost:5000${profilePicPreview}`} 
+                src={profilePicPreview} 
                 alt="Profile" 
                 className="profile-pic"
               />
@@ -410,7 +410,7 @@ const Account = () => {
               <div className="user-avatar">
                 {user.profilePic ? (
                   <img 
-                    src={`http://localhost:5000${user.profilePic}`} 
+                    src={user.profilePic} 
                     alt={user.name} 
                   />
                 ) : (

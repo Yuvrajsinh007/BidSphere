@@ -143,7 +143,7 @@ const AdminItems = () => {
           <div key={item._id} className="item-card">
             <div className="item-image">
               {item.images && item.images.length > 0 ? (
-                <img src={`http://localhost:5000${item.images[0]}`} alt={item.title} />
+                <img src={item.images[0]} alt={item.title} />
               ) : (
                 <div className="no-image">No Image</div>
               )}

@@ -177,7 +177,7 @@ exports.uploadProfilePic = async (req, res) => {
     }
 
     // Update profile picture
-    user.profilePic = `/uploads/${req.file.filename}`;
+    user.profilePic = req.file.path; // Use the path from Cloudinary
     await user.save();
 
     res.json({
@@ -189,6 +189,7 @@ exports.uploadProfilePic = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
 
 // Delete account
 exports.deleteAccount = async (req, res) => {

@@ -120,7 +120,7 @@ const ItemDetail = () => {
           <div className="w-full h-96 rounded-xl overflow-hidden shadow-lg">
             {item.images && item.images.length > 0 ? (
               <img
-                src={`http://localhost:5000${item.images[currentImageIndex]}`}
+                src={item.images[currentImageIndex]}
                 alt={item.title}
                 className="w-full h-full object-cover"
               />
@@ -136,7 +136,7 @@ const ItemDetail = () => {
               {item.images.map((image, index) => (
                 <img
                   key={index}
-                  src={`http://localhost:5000${image}`}
+                  src={image}
                   alt={`${item.title} ${index + 1}`}
                   className={`w-20 h-20 rounded-lg object-cover cursor-pointer border-2 transition ${
                     index === currentImageIndex

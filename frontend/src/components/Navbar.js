@@ -109,7 +109,7 @@ const Navbar = () => {
                     <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center">
                       {user.profilePic ? (
                         <img 
-                          src={`http://localhost:5000${user.profilePic}`} 
+                          src={user.profilePic} 
                           alt={user.name}
                           className="w-8 h-8 rounded-full object-cover"
                         />
