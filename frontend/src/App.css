@@ -23,7 +23,7 @@ body {
 
 .main-content {
   flex: 1;
-  padding-top: 1rem;
+  padding-top: 0rem;
 }
 
 .loading {

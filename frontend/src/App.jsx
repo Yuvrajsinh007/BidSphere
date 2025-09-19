@@ -17,14 +17,13 @@ import AdminItems from './pages/AdminItems';
 import AdminBids from './pages/AdminBids';
 import Account from './pages/Account';
 import AdminAccount from './pages/AdminAccount';
-import './App.css';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles = [] }) => {
   const { user, loading } = useAuth();
   
   if (loading) {
-    return <div className="loading">Loading...</div>;
+    return <div className="flex items-center justify-center min-h-[200px] text-gray-500 text-lg">Loading...</div>;
   }
   
   if (!user) {
@@ -42,9 +41,9 @@ function App() {
   return (
     <AuthProvider>
       <Router>
-        <div className="App">
+        <div className="flex flex-col min-h-screen bg-gray-100 text-gray-800">
           <Navbar />
-          <main className="main-content">
+          <main className="flex-1 pt-0">
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/login" element={<Login />} />
@@ -52,6 +51,7 @@ function App() {
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password/:token" element={<ResetPassword />} />
               <Route path="/item/:id" element={<ItemDetail />} />
+              
               <Route 
                 path="/dashboard" 
                 element={
@@ -92,6 +92,7 @@ function App() {
                   </ProtectedRoute>
                 } 
               />
+
               {/* Admin Routes */}
               <Route 
                 path="/admin" 

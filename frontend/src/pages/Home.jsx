@@ -185,6 +185,7 @@ const Home = () => {
             >
               {/* Item Image */}
               <div className="relative h-52 overflow-hidden">
+              <img src={item.images[0]} alt={item.title} className="w-full h-full object-cover" />
                 {item.images && item.images.length > 0 ? (
                   <img
                     src={`http://localhost:5000${item.images[0]}`}

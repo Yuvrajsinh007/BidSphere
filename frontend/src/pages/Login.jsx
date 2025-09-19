@@ -40,7 +40,7 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-[calc(100vh-80px)] flex items-center justify-center p-6 bg-gradient-to-tr from-indigo-500 to-purple-600">
+    <div className="min-h-[calc(100vh-74px)] flex items-center justify-center p-6 bg-gradient-to-tr from-indigo-500 to-purple-600">
       <div className="bg-white rounded-2xl shadow-2xl p-10 w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
@@ -109,12 +109,12 @@ const Login = () => {
 
         {/* Links */}
         <div className="mt-8 text-center">
-          <Link
+          {/* <Link
             to="/forgot-password"
             className="text-indigo-500 text-sm font-medium hover:text-purple-600 hover:underline"
           >
             Forgot your password?
-          </Link>
+          </Link> */}
           <p className="mt-4 text-gray-500 text-sm">
             Don’t have an account?{" "}
             <Link
