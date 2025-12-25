@@ -1,12 +1,26 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { User, Mail, Lock, ArrowRight, Loader, Eye, EyeOff } from "lucide-react";
+import { 
+  User, 
+  Mail, 
+  Lock, 
+  ArrowRight, 
+  Loader, 
+  Eye, 
+  EyeOff,
+  Phone,
+  MapPin,
+  FileText
+} from "lucide-react";
 
 const Register = () => {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
+    phone: "",
+    address: "",
+    bio: "",
     password: "",
     confirmPassword: "",
     role: "Buyer",
@@ -61,7 +75,7 @@ const Register = () => {
   return (
     <div className="min-h-screen flex bg-white">
        {/* Left Side - Image/Branding */}
-       <div className="hidden lg:flex lg:w-1/2 bg-indigo-900 relative overflow-hidden">
+       <div className="hidden lg:flex lg:w-1/2 bg-indigo-900 relative overflow-hidden fixed top-0 bottom-0 left-0">
         <div className="absolute inset-0 bg-gradient-to-tr from-purple-900 to-indigo-800 opacity-90 z-10"></div>
         <img 
           src="https://images.unsplash.com/photo-1550537687-c913840e89ae?q=80&w=2071&auto=format&fit=crop" 
@@ -81,8 +95,8 @@ const Register = () => {
       </div>
 
       {/* Right Side - Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-gray-50">
-        <div className="w-full max-w-lg space-y-6 bg-white p-8 sm:p-10 rounded-2xl shadow-xl border border-gray-100">
+      <div className="w-full lg:w-1/2 ml-auto flex items-center justify-center p-8 bg-gray-50 min-h-screen">
+        <div className="w-full max-w-lg space-y-6 bg-white p-8 sm:p-10 rounded-2xl shadow-xl border border-gray-100 my-8">
           <div className="text-center">
             <h2 className="text-3xl font-extrabold text-gray-900">Create Account</h2>
             <p className="mt-2 text-sm text-gray-600">
@@ -98,6 +112,7 @@ const Register = () => {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Full Name */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
               <div className="relative">
@@ -116,9 +131,10 @@ const Register = () => {
               </div>
             </div>
 
+            {/* Email & Phone Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <Mail className="h-5 w-5 text-gray-400" />
@@ -131,6 +147,44 @@ const Register = () => {
                     required
                     className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-all outline-none"
                     placeholder="Email Address"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Phone className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    required
+                    className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-all outline-none"
+                    placeholder="Phone Number"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Address & Role Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+               <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <MapPin className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    type="text"
+                    name="address"
+                    value={formData.address}
+                    onChange={handleChange}
+                    required
+                    className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-all outline-none"
+                    placeholder="Address"
                   />
                 </div>
               </div>
@@ -148,12 +202,31 @@ const Register = () => {
               </div>
             </div>
 
+            {/* Bio */}
+            <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Bio</label>
+                <div className="relative">
+                  <div className="absolute top-3 left-3 flex items-start pointer-events-none">
+                    <FileText className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <textarea
+                    name="bio"
+                    value={formData.bio}
+                    onChange={handleChange}
+                    rows="2"
+                    className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-all outline-none resize-none"
+                    placeholder="Tell us a little about yourself..."
+                  />
+                </div>
+            </div>
+
+            {/* Password & Confirm Password Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Password Field */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
                 <div className="relative">
-                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-20">
                     <Lock className="h-5 w-5 text-gray-400" />
                   </div>
                   <input
@@ -168,7 +241,7 @@ const Register = () => {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none"
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none z-20"
                   >
                     {showPassword ? (
                       <EyeOff className="h-5 w-5" />
@@ -183,7 +256,7 @@ const Register = () => {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Confirm</label>
                 <div className="relative">
-                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-20">
                     <Lock className="h-5 w-5 text-gray-400" />
                   </div>
                   <input
@@ -198,7 +271,7 @@ const Register = () => {
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none"
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none z-20"
                   >
                     {showConfirmPassword ? (
                       <EyeOff className="h-5 w-5" />
@@ -213,7 +286,7 @@ const Register = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full mt-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl hover:from-indigo-700 hover:to-purple-700 focus:ring-4 focus:ring-indigo-200 transition-all transform active:scale-[0.99] disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center"
+              className="w-full mt-6 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl hover:from-indigo-700 hover:to-purple-700 focus:ring-4 focus:ring-indigo-200 transition-all transform active:scale-[0.99] disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center"
             >
               {loading ? (
                  <Loader className="animate-spin h-5 w-5 text-white" />
@@ -239,4 +312,4 @@ const Register = () => {
   );
 };
 
-export default Register;  
+export default Register;
