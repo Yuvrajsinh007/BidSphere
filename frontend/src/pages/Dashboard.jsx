@@ -127,11 +127,25 @@ const BuyerDashboard = ({ user }) => {
   }, []);
 
   const activeBids = bids.filter(b => b.item && b.item.status === 'active');
+  // 1. Filter for items you won
   const wonAuctions = bids.filter(b => b.item && b.item.status === 'sold' && b.item.winner === user._id);
-  // Filter for unique items won
-  const uniqueWonItems = [...new Map(wonAuctions.map(b => [b.item._id, b])).values()];
 
-  const totalSpent = uniqueWonItems.reduce((acc, curr) => acc + curr.amount, 0);
+  // 2. Deduplicate items correctly (Keep the one with the HIGHEST bid amount)
+  const uniqueWonMap = new Map();
+  wonAuctions.forEach(bid => {
+      const existing = uniqueWonMap.get(bid.item._id);
+      if (!existing || bid.amount > existing.amount) {
+          uniqueWonMap.set(bid.item._id, bid);
+      }
+  });
+  const uniqueWonItems = Array.from(uniqueWonMap.values());
+
+  // 3. Calculate Total (Use the item's currentBid if available, otherwise the highest bid amount)
+  const totalSpent = uniqueWonItems.reduce((acc, curr) => {
+      // Prefer the item's final recorded price (currentBid) over the bid amount to be accurate
+      const price = curr.item.currentBid || curr.amount; 
+      return acc + price;
+  }, 0);
 
   return (
     <div className="space-y-8">

@@ -44,7 +44,7 @@ const Register = () => {
       const { confirmPassword, ...registerData } = formData;
       const result = await register(registerData);
       if (result.success) {
-        navigate("/dashboard");
+        navigate("/");
       } else {
         setError(result.message);
       }
