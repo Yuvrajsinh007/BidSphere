@@ -1,6 +1,20 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../services/api";
+import { 
+  Package, 
+  Tag, 
+  FileText, 
+  DollarSign, 
+  Clock, 
+  Calendar, 
+  Upload, 
+  X, 
+  Image as ImageIcon,
+  ArrowLeft,
+  AlertCircle,
+  CheckCircle2
+} from "lucide-react";
 
 const CreateItem = () => {
   const navigate = useNavigate();
@@ -9,17 +23,16 @@ const CreateItem = () => {
     description: "",
     category: "",
     basePrice: "",
-    auctionDuration: "24", // Default for fixed
-    customEndTime: "",     // New field for custom date
+    auctionDuration: "24",
+    customEndTime: "",
   });
   
-  // New state to toggle between Fixed and Custom
-  const [durationType, setDurationType] = useState("fixed"); // 'fixed' or 'custom'
-  
+  const [durationType, setDurationType] = useState("fixed");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [imageFiles, setImageFiles] = useState([]);
   const [imagePreview, setImagePreview] = useState([]);
+  const [dragActive, setDragActive] = useState(false);
 
   const categories = [
     "Electronics", "Fashion", "Home & Garden", "Sports", "Books",
@@ -34,10 +47,43 @@ const CreateItem = () => {
   };
 
   const handleImageChange = (e) => {
-    const files = Array.from(e.target.files);
-    setImageFiles(files);
-    const previews = files.map((file) => URL.createObjectURL(file));
-    setImagePreview(previews);
+    if (e.target.files && e.target.files.length > 0) {
+      processFiles(e.target.files);
+    }
+  };
+
+  const processFiles = (files) => {
+    const fileArray = Array.from(files);
+    
+    // Validate file count
+    if (imageFiles.length + fileArray.length > 5) {
+      setError("You can only upload a maximum of 5 images.");
+      return;
+    }
+
+    const newPreviews = fileArray.map((file) => URL.createObjectURL(file));
+    setImageFiles((prev) => [...prev, ...fileArray]);
+    setImagePreview((prev) => [...prev, ...newPreviews]);
+    setError("");
+  };
+
+  const handleDrag = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      processFiles(e.dataTransfer.files);
+    }
   };
 
   const removeImage = (index) => {
@@ -53,17 +99,19 @@ const CreateItem = () => {
     setLoading(true);
 
     try {
+      if (imageFiles.length === 0) {
+        throw new Error("Please upload at least one image.");
+      }
+
       const data = new FormData();
       data.append("title", formData.title);
       data.append("description", formData.description);
       data.append("category", formData.category);
       data.append("basePrice", formData.basePrice);
 
-      // LOGIC: Send either duration OR customEndTime
       if (durationType === 'fixed') {
         data.append("auctionDuration", formData.auctionDuration);
       } else {
-        // Validate custom time
         const selectedTime = new Date(formData.customEndTime).getTime();
         const now = new Date().getTime();
         if (selectedTime <= now) {
@@ -83,201 +131,336 @@ const CreateItem = () => {
       navigate("/my-items");
     } catch (error) {
       setError(error.message || error.response?.data?.message || "Failed to create item");
-      console.error("Create item error:", error);
+      window.scrollTo(0, 0);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-6 py-10">
-      <div className="bg-white shadow-lg rounded-2xl p-8">
-        <div className="mb-6 text-center">
-          <h1 className="text-2xl font-bold text-indigo-600">Create New Auction Item</h1>
-          <p className="text-gray-500">List your item for auction</p>
+    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Create Listing</h1>
+            <p className="mt-2 text-sm text-gray-500">
+              Fill in the details below to start a new auction.
+            </p>
+          </div>
+          <button
+            onClick={() => navigate("/dashboard")}
+            className="hidden sm:flex items-center text-sm text-gray-500 hover:text-gray-900 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4 mr-1" />
+            Back to Dashboard
+          </button>
         </div>
 
-        {error && (
-          <div className="mb-4 p-3 rounded-md bg-red-100 text-red-600 text-sm">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-8">
-          {/* Basic Info */}
-          <div>
-            <h3 className="text-lg font-semibold text-gray-700 mb-3">Basic Information</h3>
-            <div className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          
+          {error && (
+            <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-md flex items-start animate-fadeIn">
+              <AlertCircle className="w-5 h-5 text-red-500 mt-0.5 mr-3 flex-shrink-0" />
               <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">Item Title *</label>
-                <input
-                  type="text"
-                  name="title"
-                  value={formData.title}
-                  onChange={handleChange}
-                  required
-                  placeholder="Enter item title"
-                  className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">Category *</label>
-                <select
-                  name="category"
-                  value={formData.category}
-                  onChange={handleChange}
-                  required
-                  className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-indigo-500"
-                >
-                  <option value="">Select a category</option>
-                  {categories.map((category) => (
-                    <option key={category} value={category}>{category}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">Description *</label>
-                <textarea
-                  name="description"
-                  rows="4"
-                  value={formData.description}
-                  onChange={handleChange}
-                  required
-                  placeholder="Describe your item"
-                  className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-indigo-500"
-                />
+                <h3 className="text-sm font-medium text-red-800">Error</h3>
+                <p className="text-sm text-red-700 mt-1">{error}</p>
               </div>
             </div>
-          </div>
+          )}
 
-          {/* Pricing & Duration */}
-          <div>
-            <h3 className="text-lg font-semibold text-gray-700 mb-3">Pricing & Duration</h3>
-            <div className="grid md:grid-cols-2 gap-4 mb-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">Base Price ($) *</label>
-                <input
-                  type="number"
-                  name="basePrice"
-                  value={formData.basePrice}
-                  onChange={handleChange}
-                  required
-                  min="0.01"
-                  step="0.01"
-                  placeholder="Enter starting price"
-                  className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-
-              {/* DURATION TOGGLE & INPUTS */}
-              <div>
-                <label className="block text-sm font-medium text-gray-600 mb-2">Auction End Time *</label>
-                
-                {/* Toggle Buttons */}
-                <div className="flex gap-4 mb-3">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input 
-                      type="radio" 
-                      name="durType" 
-                      checked={durationType === 'fixed'} 
-                      onChange={() => setDurationType('fixed')}
-                      className="text-indigo-600 focus:ring-indigo-500"
-                    />
-                    <span className="text-sm text-gray-700">Fixed Duration</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input 
-                      type="radio" 
-                      name="durType" 
-                      checked={durationType === 'custom'} 
-                      onChange={() => setDurationType('custom')}
-                      className="text-indigo-600 focus:ring-indigo-500"
-                    />
-                    <span className="text-sm text-gray-700">Custom Date</span>
-                  </label>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            {/* Left Column - Main Details */}
+            <div className="lg:col-span-2 space-y-6">
+              
+              {/* Basic Info Card */}
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2 bg-indigo-100 rounded-lg text-indigo-600">
+                    <Package className="w-6 h-6" />
+                  </div>
+                  <h2 className="text-xl font-bold text-gray-900">Item Details</h2>
                 </div>
 
-                {/* Conditional Inputs */}
-                {durationType === 'fixed' ? (
-                  <select
-                    name="auctionDuration"
-                    value={formData.auctionDuration}
-                    onChange={handleChange}
-                    required
-                    className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-indigo-500"
-                  >
-                    <option value="1">1 hour</option>
-                    <option value="6">6 hours</option>
-                    <option value="12">12 hours</option>
-                    <option value="24">1 day</option>
-                    <option value="48">2 days</option>
-                    <option value="72">3 days</option>
-                    <option value="168">1 week</option>
-                  </select>
-                ) : (
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Item Title</label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Package className="h-5 w-5 text-gray-400" />
+                      </div>
+                      <input
+                        type="text"
+                        name="title"
+                        value={formData.title}
+                        onChange={handleChange}
+                        required
+                        className="block w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none bg-gray-50 focus:bg-white"
+                        placeholder="e.g. Vintage 1960s Camera"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Tag className="h-5 w-5 text-gray-400" />
+                      </div>
+                      <select
+                        name="category"
+                        value={formData.category}
+                        onChange={handleChange}
+                        required
+                        className="block w-full pl-10 pr-10 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none bg-gray-50 focus:bg-white appearance-none"
+                      >
+                        <option value="">Select a category</option>
+                        {categories.map((category) => (
+                          <option key={category} value={category}>{category}</option>
+                        ))}
+                      </select>
+                      <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                        <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                    <div className="relative">
+                      <div className="absolute top-3 left-3 flex items-start pointer-events-none">
+                        <FileText className="h-5 w-5 text-gray-400" />
+                      </div>
+                      <textarea
+                        name="description"
+                        rows="5"
+                        value={formData.description}
+                        onChange={handleChange}
+                        required
+                        className="block w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none bg-gray-50 focus:bg-white resize-none"
+                        placeholder="Detailed description of the item, condition, provenance, etc."
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Media Upload Card */}
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2 bg-indigo-100 rounded-lg text-indigo-600">
+                    <ImageIcon className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-gray-900">Media</h2>
+                    <p className="text-sm text-gray-500">Upload up to 5 photos of your item.</p>
+                  </div>
+                </div>
+
+                <div 
+                  className={`border-2 border-dashed rounded-xl p-8 text-center transition-all ${
+                    dragActive 
+                      ? "border-indigo-500 bg-indigo-50" 
+                      : "border-gray-300 hover:border-indigo-400 hover:bg-gray-50"
+                  }`}
+                  onDragEnter={handleDrag}
+                  onDragLeave={handleDrag}
+                  onDragOver={handleDrag}
+                  onDrop={handleDrop}
+                >
                   <input
-                    type="datetime-local"
-                    name="customEndTime"
-                    value={formData.customEndTime}
-                    onChange={handleChange}
-                    required
-                    min={new Date().toISOString().slice(0, 16)} // Prevent past dates
-                    className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-indigo-500"
+                    id="image-upload"
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="hidden"
                   />
+                  <div className="flex flex-col items-center justify-center">
+                    <div className="h-12 w-12 rounded-full bg-indigo-100 flex items-center justify-center mb-4">
+                      <Upload className="h-6 w-6 text-indigo-600" />
+                    </div>
+                    <label 
+                      htmlFor="image-upload"
+                      className="text-base font-medium text-indigo-600 cursor-pointer hover:text-indigo-500"
+                    >
+                      Click to upload
+                    </label>
+                    <span className="text-sm text-gray-500 mt-1">or drag and drop images here</span>
+                    <p className="text-xs text-gray-400 mt-2">JPG, PNG, WEBP up to 5MB</p>
+                  </div>
+                </div>
+
+                {imagePreview.length > 0 && (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-6">
+                    {imagePreview.map((preview, index) => (
+                      <div key={index} className="relative group rounded-xl overflow-hidden border border-gray-200 shadow-sm aspect-square">
+                        <img 
+                          src={preview} 
+                          alt={`Preview ${index + 1}`} 
+                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" 
+                        />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <button
+                            type="button"
+                            onClick={() => removeImage(index)}
+                            className="p-2 bg-white rounded-full text-red-600 hover:bg-red-50 transition-colors"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                        {index === 0 && (
+                          <div className="absolute top-2 left-2 bg-indigo-600 text-white text-xs font-bold px-2 py-1 rounded shadow-sm">
+                            Main Image
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
             </div>
-          </div>
 
-          {/* Images */}
-          <div>
-            <h3 className="text-lg font-semibold text-gray-700 mb-3">Images</h3>
-            <p className="text-sm text-gray-500 mb-2">
-              First image will be the main display image. You can add up to 5 images.
-            </p>
-            <input
-              type="file"
-              onChange={handleImageChange}
-              multiple
-              accept="image/*"
-              className="block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100"
-            />
-            {imagePreview.length > 0 && (
-              <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
-                {imagePreview.map((preview, index) => (
-                  <div key={index} className="relative border rounded-lg overflow-hidden">
-                    <img src={preview} alt="Preview" className="w-full h-32 object-cover" />
+            {/* Right Column - Settings */}
+            <div className="space-y-6">
+              
+              {/* Pricing Card */}
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2 bg-green-100 rounded-lg text-green-600">
+                    <DollarSign className="w-6 h-6" />
+                  </div>
+                  <h2 className="text-xl font-bold text-gray-900">Pricing</h2>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Starting Bid</label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <span className="text-gray-500 font-bold">$</span>
+                    </div>
+                    <input
+                      type="number"
+                      name="basePrice"
+                      value={formData.basePrice}
+                      onChange={handleChange}
+                      required
+                      min="0.01"
+                      step="0.01"
+                      className="block w-full pl-8 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none bg-gray-50 focus:bg-white font-medium text-lg"
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">
+                    This is the minimum amount the first bidder needs to place.
+                  </p>
+                </div>
+              </div>
+
+              {/* Duration Card */}
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2 bg-orange-100 rounded-lg text-orange-600">
+                    <Clock className="w-6 h-6" />
+                  </div>
+                  <h2 className="text-xl font-bold text-gray-900">Duration</h2>
+                </div>
+
+                <div className="space-y-4">
+                  <label className="block text-sm font-medium text-gray-700">Auction Type</label>
+                  <div className="grid grid-cols-2 gap-3 p-1 bg-gray-100 rounded-xl">
                     <button
                       type="button"
-                      onClick={() => removeImage(index)}
-                      className="absolute top-1 right-1 bg-red-500 text-white rounded-full px-2 py-1 text-xs"
+                      onClick={() => setDurationType('fixed')}
+                      className={`flex items-center justify-center gap-2 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
+                        durationType === 'fixed'
+                          ? 'bg-white text-indigo-600 shadow-sm'
+                          : 'text-gray-500 hover:text-gray-700'
+                      }`}
                     >
-                      ×
+                      <Clock className="w-4 h-4" /> Fixed
                     </button>
-                    {index === 0 && <span className="absolute bottom-1 left-1 bg-indigo-600 text-white text-xs px-2 py-0.5 rounded">Main</span>}
+                    <button
+                      type="button"
+                      onClick={() => setDurationType('custom')}
+                      className={`flex items-center justify-center gap-2 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
+                        durationType === 'custom'
+                          ? 'bg-white text-indigo-600 shadow-sm'
+                          : 'text-gray-500 hover:text-gray-700'
+                      }`}
+                    >
+                      <Calendar className="w-4 h-4" /> Custom
+                    </button>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
 
-          <div className="flex justify-end space-x-4">
-            <button
-              type="button"
-              onClick={() => navigate("/my-items")}
-              className="px-5 py-2 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-100"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="px-5 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50"
-            >
-              {loading ? "Creating..." : "Create Auction"}
-            </button>
+                  <div className="pt-2">
+                    {durationType === 'fixed' ? (
+                      <div className="relative">
+                        <select
+                          name="auctionDuration"
+                          value={formData.auctionDuration}
+                          onChange={handleChange}
+                          className="block w-full pl-4 pr-10 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none bg-gray-50 focus:bg-white appearance-none cursor-pointer"
+                        >
+                          <option value="1">1 Hour</option>
+                          <option value="6">6 Hours</option>
+                          <option value="12">12 Hours</option>
+                          <option value="24">1 Day</option>
+                          <option value="48">2 Days</option>
+                          <option value="72">3 Days</option>
+                          <option value="168">1 Week</option>
+                        </select>
+                        <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                          <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="relative">
+                         <input
+                          type="datetime-local"
+                          name="customEndTime"
+                          value={formData.customEndTime}
+                          onChange={handleChange}
+                          required
+                          min={new Date().toISOString().slice(0, 16)}
+                          className="block w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none bg-gray-50 focus:bg-white"
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex flex-col gap-3">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full flex items-center justify-center gap-2 py-4 bg-indigo-600 text-white rounded-xl font-bold text-lg hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 hover:shadow-indigo-300 transform active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
+                >
+                  {loading ? (
+                    <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-5 h-5" /> Launch Auction
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigate("/my-items")}
+                  className="w-full py-3 bg-white text-gray-700 border border-gray-200 rounded-xl font-medium hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+
+            </div>
           </div>
         </form>
       </div>

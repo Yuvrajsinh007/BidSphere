@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import { User, Mail, Lock, ArrowRight, Loader, Eye, EyeOff } from "lucide-react";
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -12,6 +13,8 @@ const Register = () => {
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const { register } = useAuth();
   const navigate = useNavigate();
@@ -44,7 +47,7 @@ const Register = () => {
       const { confirmPassword, ...registerData } = formData;
       const result = await register(registerData);
       if (result.success) {
-        navigate("/");
+        navigate("/market");
       } else {
         setError(result.message);
       }
@@ -56,105 +59,173 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-indigo-600 via-purple-600 to-indigo-800">
-      <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden transform transition-all hover:scale-[1.01]">
-        <div className="p-8 sm:p-10">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight mb-2">
-              Create Account
-            </h1>
-            <p className="text-gray-500 text-sm">
-              Join BidSphere and start bidding today
+    <div className="min-h-screen flex bg-white">
+       {/* Left Side - Image/Branding */}
+       <div className="hidden lg:flex lg:w-1/2 bg-indigo-900 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-tr from-purple-900 to-indigo-800 opacity-90 z-10"></div>
+        <img 
+          src="https://images.unsplash.com/photo-1550537687-c913840e89ae?q=80&w=2071&auto=format&fit=crop" 
+          alt="Registration Background" 
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+        <div className="relative z-20 flex flex-col justify-between p-12 h-full text-white">
+          <div className="text-2xl font-bold tracking-wider">BidSphere</div>
+          <div>
+            <h2 className="text-4xl font-extrabold mb-6">Join the Community</h2>
+            <p className="text-lg text-indigo-100 max-w-md">
+              Create an account today to start bidding on exclusive items or selling your own treasures to a global audience.
+            </p>
+          </div>
+          <div className="text-sm text-indigo-200">© 2024 BidSphere Inc.</div>
+        </div>
+      </div>
+
+      {/* Right Side - Form */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-gray-50">
+        <div className="w-full max-w-lg space-y-6 bg-white p-8 sm:p-10 rounded-2xl shadow-xl border border-gray-100">
+          <div className="text-center">
+            <h2 className="text-3xl font-extrabold text-gray-900">Create Account</h2>
+            <p className="mt-2 text-sm text-gray-600">
+              Start your journey with BidSphere
             </p>
           </div>
 
           {error && (
-            <div className="mb-6 p-4 rounded-lg bg-red-50 border-l-4 border-red-500 text-red-700 text-sm flex items-center">
-              <span className="mr-2">⚠️</span> {error}
+            <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-md flex items-center">
+              <span className="text-red-500 mr-2">⚠️</span>
+              <p className="text-sm text-red-700">{error}</p>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Name */}
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-              <input
-                type="text"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none"
-                placeholder="John Doe"
-              />
-            </div>
-
-            {/* Email & Role Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <User className="h-5 w-5 text-gray-400" />
+                </div>
                 <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
+                  type="text"
+                  name="name"
+                  value={formData.name}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none"
-                  placeholder="john@example.com"
+                  className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-all outline-none"
+                  placeholder="Full Name"
                 />
               </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Account Type</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Mail className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    required
+                    className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-all outline-none"
+                    placeholder="Email Address"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">I want to</label>
                 <select
                   name="role"
                   value={formData.role}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none bg-white"
+                  className="block w-full px-3 py-3 border border-gray-300 bg-white rounded-lg focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-all outline-none"
                 >
-                  <option value="Buyer">I want to Buy</option>
-                  <option value="Seller">I want to Sell</option>
+                  <option value="Buyer">Buy Items</option>
+                  <option value="Seller">Sell Items</option>
                 </select>
               </div>
             </div>
 
-            {/* Passwords */}
-            <div className="space-y-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Password Field */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                <input
-                  type="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none"
-                  placeholder="••••••••"
-                />
+                <div className="relative">
+                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Lock className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    name="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    required
+                    className="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-all outline-none"
+                    placeholder="••••••••"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-5 w-5" />
+                    ) : (
+                      <Eye className="h-5 w-5" />
+                    )}
+                  </button>
+                </div>
               </div>
+              
+              {/* Confirm Password Field */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
-                <input
-                  type="password"
-                  name="confirmPassword"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none"
-                  placeholder="••••••••"
-                />
+                <label className="block text-sm font-medium text-gray-700 mb-1">Confirm</label>
+                <div className="relative">
+                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Lock className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    type={showConfirmPassword ? "text" : "password"}
+                    name="confirmPassword"
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    required
+                    className="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-all outline-none"
+                    placeholder="••••••••"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none"
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff className="h-5 w-5" />
+                    ) : (
+                      <Eye className="h-5 w-5" />
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full mt-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl hover:from-indigo-700 hover:to-purple-700 focus:ring-4 focus:ring-indigo-200 transition-all transform active:scale-95 disabled:opacity-70"
+              className="w-full mt-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl hover:from-indigo-700 hover:to-purple-700 focus:ring-4 focus:ring-indigo-200 transition-all transform active:scale-[0.99] disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center"
             >
-              {loading ? "Creating Account..." : "Sign Up"}
+              {loading ? (
+                 <Loader className="animate-spin h-5 w-5 text-white" />
+              ) : (
+                <>
+                  Create Account <ArrowRight className="ml-2 h-5 w-5" />
+                </>
+              )}
             </button>
           </form>
 
-          <div className="mt-8 text-center">
+          <div className="mt-6 text-center">
             <p className="text-gray-600 text-sm">
               Already have an account?{" "}
               <Link to="/login" className="font-bold text-indigo-600 hover:text-indigo-500 transition-colors">
@@ -168,4 +239,4 @@ const Register = () => {
   );
 };
 
-export default Register;
+export default Register;  

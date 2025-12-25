@@ -115,25 +115,25 @@ const Home = () => {
     
     if (item.status === 'sold') {
       return (
-        <span className="flex items-center gap-1 bg-green-100 text-green-700 text-xs font-semibold px-2.5 py-0.5 rounded-full border border-green-200">
+        <span className="flex items-center gap-1 bg-green-100 text-green-700 text-xs font-semibold px-2.5 py-0.5 rounded-full border border-green-200 shadow-sm backdrop-blur-md">
           <CheckCircle className="w-3 h-3" /> Sold
         </span>
       );
     } else if (item.status === 'closed') {
       return (
-        <span className="flex items-center gap-1 bg-gray-100 text-gray-700 text-xs font-semibold px-2.5 py-0.5 rounded-full border border-gray-200">
+        <span className="flex items-center gap-1 bg-gray-100 text-gray-700 text-xs font-semibold px-2.5 py-0.5 rounded-full border border-gray-200 shadow-sm backdrop-blur-md">
           <XCircle className="w-3 h-3" /> Closed
         </span>
       );
     } else if (endTime <= now) {
       return (
-        <span className="flex items-center gap-1 bg-red-100 text-red-700 text-xs font-semibold px-2.5 py-0.5 rounded-full border border-red-200">
+        <span className="flex items-center gap-1 bg-red-100 text-red-700 text-xs font-semibold px-2.5 py-0.5 rounded-full border border-red-200 shadow-sm backdrop-blur-md">
           <Clock className="w-3 h-3" /> Expired
         </span>
       );
     } else {
       return (
-        <span className="flex items-center gap-1 bg-blue-100 text-blue-700 text-xs font-semibold px-2.5 py-0.5 rounded-full border border-blue-200">
+        <span className="flex items-center gap-1 bg-blue-100 text-blue-700 text-xs font-semibold px-2.5 py-0.5 rounded-full border border-blue-200 shadow-sm backdrop-blur-md">
           <AlertCircle className="w-3 h-3" /> Active
         </span>
       );
@@ -158,7 +158,7 @@ const Home = () => {
         </div>
 
         {/* Filters & Search Bar */}
-        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-8 sticky top-4 z-20">
+        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-8 sticky top-4 z-20 transition-shadow hover:shadow-md">
           <form onSubmit={(e) => e.preventDefault()} className="flex flex-col md:flex-row gap-4 items-center">
             
             {/* Search Input */}
@@ -171,7 +171,7 @@ const Home = () => {
                 placeholder="Search for items..."
                 value={inputValue}
                 onChange={handleInputChange}
-                className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg leading-5 bg-gray-50 placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 sm:text-sm transition-all duration-200"
+                className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg leading-5 bg-gray-50 placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 sm:text-sm transition-all duration-200 hover:bg-white"
               />
             </div>
 
@@ -184,7 +184,7 @@ const Home = () => {
                 <select
                   value={category}
                   onChange={handleCategoryChange}
-                  className="block w-full pl-9 pr-8 py-2.5 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-lg bg-white shadow-sm cursor-pointer"
+                  className="block w-full pl-9 pr-8 py-2.5 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-lg bg-gray-50 hover:bg-white shadow-sm cursor-pointer transition-colors"
                 >
                   <option value="">All Categories</option>
                   <option value="Electronics">Electronics</option>
@@ -207,7 +207,7 @@ const Home = () => {
                 <select
                   value={status}
                   onChange={handleStatusChange}
-                  className="block w-full pl-9 pr-8 py-2.5 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-lg bg-white shadow-sm cursor-pointer"
+                  className="block w-full pl-9 pr-8 py-2.5 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-lg bg-gray-50 hover:bg-white shadow-sm cursor-pointer transition-colors"
                 >
                   <option value="active">Active</option>
                   <option value="ended">Ended</option>
@@ -221,17 +221,17 @@ const Home = () => {
         {/* Content Area */}
         {loadingItems ? (
           <div className="flex flex-col justify-center items-center h-64 space-y-4">
-             <div className="animate-spin rounded-full h-12 w-12 border-4 border-indigo-200 border-t-indigo-600"></div>
-             <p className="text-gray-500 font-medium">Finding treasures...</p>
+              <div className="animate-spin rounded-full h-12 w-12 border-4 border-indigo-200 border-t-indigo-600"></div>
+              <p className="text-gray-500 font-medium animate-pulse">Finding treasures...</p>
           </div>
         ) : (
           <>
             {/* Items Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {items.length === 0 ? (
-                <div className="col-span-full flex flex-col items-center justify-center p-12 bg-white rounded-2xl border border-dashed border-gray-300 text-center">
+                <div className="col-span-full flex flex-col items-center justify-center p-12 bg-white rounded-2xl border border-dashed border-gray-300 text-center animate-fadeIn">
                   <div className="p-4 bg-gray-50 rounded-full mb-4">
-                    <Search className="h-8 w-8 text-gray-400" />
+                    <Search className="h-10 w-10 text-gray-400" />
                   </div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-1">No items found</h3>
                   <p className="text-gray-500 max-w-sm mx-auto">
@@ -243,7 +243,7 @@ const Home = () => {
                   <Link 
                     key={item._id} 
                     to={`/item/${item._id}`}
-                    className="group bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col h-full"
+                    className="group bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col h-full animate-fadeIn"
                   >
                     {/* Image Container */}
                     <div className="relative h-48 sm:h-56 overflow-hidden bg-gray-100">
@@ -251,27 +251,30 @@ const Home = () => {
                         <img
                           src={item.images[0]}
                           alt={item.title}
-                          className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500"
+                          className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700 ease-in-out"
                         />
                       ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
-                          <ImageIcon className="h-10 w-10 mb-2" />
-                          <span className="text-sm">No Image</span>
+                        <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 bg-gray-100">
+                          <ImageIcon className="h-10 w-10 mb-2 opacity-50" />
+                          <span className="text-sm font-medium">No Image</span>
                         </div>
                       )}
                       
                       {/* Floating Badges */}
-                      <div className="absolute top-3 right-3">
+                      <div className="absolute top-3 right-3 z-10">
                         {getStatusBadge(item)}
                       </div>
-                      <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm text-gray-800 text-xs font-semibold px-2.5 py-1 rounded-md shadow-sm border border-gray-100 flex items-center gap-1">
+                      <div className="absolute top-3 left-3 z-10 bg-white/90 backdrop-blur-md text-gray-800 text-xs font-bold px-2.5 py-1 rounded-md shadow-sm border border-gray-100 flex items-center gap-1 uppercase tracking-wide">
                         <Tag className="w-3 h-3 text-indigo-500" />
                         {item.category}
                       </div>
+                      
+                      {/* Hover Overlay */}
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300 pointer-events-none" />
                     </div>
 
                     {/* Card Content */}
-                    <div className="p-5 flex flex-col flex-grow">
+                    <div className="p-5 flex flex-col flex-grow relative">
                       <div className="mb-4">
                         <h3 className="text-lg font-bold text-gray-900 mb-1 line-clamp-1 group-hover:text-indigo-600 transition-colors">
                           {item.title}
@@ -283,22 +286,22 @@ const Home = () => {
 
                       <div className="mt-auto space-y-4">
                         {/* Price & Time Row */}
-                        <div className="flex justify-between items-end border-t border-gray-50 pt-4">
+                        <div className="flex justify-between items-end border-t border-gray-100 pt-4">
                           <div>
-                            <p className="text-xs text-gray-400 font-medium uppercase tracking-wider mb-0.5">Current Bid</p>
-                            <div className="flex items-center gap-1 text-green-600 font-bold text-xl">
-                              <DollarSign className="w-5 h-5" />
+                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">Current Bid</p>
+                            <div className="flex items-center gap-1 text-indigo-600 font-extrabold text-xl">
+                              <DollarSign className="w-5 h-5" strokeWidth={3} />
                               {item.currentBid || item.basePrice}
                             </div>
                           </div>
                           <div className="text-right">
-                             <div className={`flex items-center justify-end gap-1 text-sm font-medium ${
+                             <div className={`flex items-center justify-end gap-1 text-sm font-bold ${
                                 new Date(item.endTime) < new Date() ? 'text-gray-400' : 'text-amber-600'
                              }`}>
-                               <Clock className="w-4 h-4" />
+                               <Clock className="w-3.5 h-3.5" strokeWidth={2.5} />
                                {formatTimeLeft(item.endTime)}
                              </div>
-                             <p className="text-xs text-gray-400 mt-0.5">Time Left</p>
+                             <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-0.5">Time Left</p>
                           </div>
                         </div>
 
@@ -306,13 +309,13 @@ const Home = () => {
                         <div className="flex items-center justify-between pt-2">
                           <div className="flex items-center gap-2 text-xs text-gray-500">
                             <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center border border-gray-200">
-                              <User className="w-3 h-3 text-gray-600" />
+                              <User className="w-3.5 h-3.5 text-gray-500" />
                             </div>
-                            <span className="truncate max-w-[100px]">{item.seller?.name || 'Unknown'}</span>
+                            <span className="truncate max-w-[100px] font-medium">{item.seller?.name || 'Unknown'}</span>
                           </div>
                           
-                          <span className="text-indigo-600 text-sm font-semibold flex items-center gap-1 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
-                            Bid Now <ArrowRight className="w-4 h-4" />
+                          <span className="text-indigo-600 text-xs font-bold flex items-center gap-1 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
+                            View Details <ArrowRight className="w-3.5 h-3.5" />
                           </span>
                         </div>
                       </div>
@@ -324,23 +327,23 @@ const Home = () => {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="mt-12 flex justify-center items-center gap-2">
+              <div className="mt-12 flex justify-center items-center gap-2 animate-fadeIn">
                 <button
                   onClick={() => setCurrentPage(currentPage - 1)}
                   disabled={!hasPrev}
-                  className="flex items-center gap-1 px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm font-medium"
+                  className="flex items-center gap-1 px-4 py-2 bg-white text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-50 hover:text-indigo-600 hover:border-indigo-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm font-medium"
                 >
                   <ChevronLeft className="w-4 h-4" /> Previous
                 </button>
                 
-                <span className="px-4 py-2 text-gray-600 font-medium bg-gray-100 rounded-lg">
+                <span className="px-4 py-2 text-gray-600 font-medium bg-white border border-gray-200 rounded-lg shadow-sm">
                   Page <span className="text-indigo-600 font-bold">{currentPage}</span> of {totalPages}
                 </span>
                 
                 <button
                   onClick={() => setCurrentPage(currentPage + 1)}
                   disabled={!hasNext}
-                  className="flex items-center gap-1 px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm font-medium"
+                  className="flex items-center gap-1 px-4 py-2 bg-white text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-50 hover:text-indigo-600 hover:border-indigo-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm font-medium"
                 >
                   Next <ChevronRight className="w-4 h-4" />
                 </button>

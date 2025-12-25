@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Navbar from './components/Navbar';
+import Landing from './pages/Landing';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -32,7 +33,7 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
   }
   
   if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
-    return <Navigate to="/" />;
+    return <Navigate to="/market" />;
   }
   
   return children;
@@ -55,6 +56,15 @@ function App() {
               <Route path="/item/:id" element={<ItemDetail />} />
               
               {/* Protected Routes */}
+              <Route 
+                path="/market" 
+                element={
+                  <ProtectedRoute>
+                    <Home /> {/* This acts as the Marketplace */}
+                  </ProtectedRoute>
+                } 
+              />
+              
               <Route 
                 path="/dashboard" 
                 element={
