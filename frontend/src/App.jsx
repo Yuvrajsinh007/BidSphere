@@ -5,12 +5,13 @@ import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import ForgotPassword from './pages/ForgotPassword';
+import VerifyOtp from './pages/VerifyOtp'; // Import New Page
+import ResetPassword from './pages/ResetPassword';
 import Dashboard from './pages/Dashboard';
 import ItemDetail from './pages/ItemDetail';
 import CreateItem from './pages/CreateItem';
 import MyItems from './pages/MyItems';
-import ForgotPassword from './pages/ForgotPassword';
-import ResetPassword from './pages/ResetPassword';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminUsers from './pages/AdminUsers';
 import AdminItems from './pages/AdminItems';
@@ -23,7 +24,7 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
   const { user, loading } = useAuth();
   
   if (loading) {
-    return <div className="flex items-center justify-center min-h-[200px] text-gray-500 text-lg">Loading...</div>;
+    return <div className="flex items-center justify-center min-h-screen text-gray-500 text-lg">Loading...</div>;
   }
   
   if (!user) {
@@ -49,9 +50,11 @@ function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="/reset-password/:token" element={<ResetPassword />} />
+              <Route path="/verify-otp" element={<VerifyOtp />} /> {/* New Route */}
+              <Route path="/reset-password" element={<ResetPassword />} /> {/* Updated Route */}
               <Route path="/item/:id" element={<ItemDetail />} />
               
+              {/* Protected Routes */}
               <Route 
                 path="/dashboard" 
                 element={

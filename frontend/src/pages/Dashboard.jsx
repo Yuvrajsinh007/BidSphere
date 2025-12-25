@@ -2,264 +2,232 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import api from "../services/api";
+import { 
+  Package, ShoppingBag, Gavel, Trophy, CreditCard, 
+  Plus, List, TrendingUp, Clock, AlertCircle, DollarSign
+} from 'lucide-react';
 
-const Dashboard = () => {
-  const { user } = useAuth();
-  const [stats, setStats] = useState({
-    totalItems: 0,
-    activeBids: 0,
-    wonAuctions: 0,
-    totalSpent: 0,
-  });
-  const [recentItems, setRecentItems] = useState([]);
+// --- SELLER DASHBOARD COMPONENT ---
+const SellerDashboard = ({ user }) => {
+  const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchDashboardData();
+    const fetchItems = async () => {
+      try {
+        const { data } = await api.get('/items/my-items');
+        setItems(data);
+      } catch (error) {
+        console.error("Fetch items error", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchItems();
   }, []);
 
-  const fetchDashboardData = async () => {
-    try {
-      setLoading(true);
-      const [itemsResponse, bidsResponse] = await Promise.all([
-        api.get("/items"),
-        api.get("/bids/my-bids"),
-      ]);
+  const activeItems = items.filter(i => i.status === 'active').length;
+  const soldItems = items.filter(i => i.status === 'sold').length;
+  const totalRevenue = items
+    .filter(i => i.status === 'sold')
+    .reduce((acc, curr) => acc + (curr.currentBid || 0), 0);
 
-      const items = itemsResponse.data;
-      const bids = bidsResponse.data;
-
-      const totalItems = items.length;
-      const activeBids = bids.filter(
-        (bid) => new Date(bid.item.endTime) > new Date()
-      ).length;
-      const wonAuctions = bids.filter(
-        (bid) =>
-          new Date(bid.item.endTime) < new Date() &&
-          bid.amount === Math.max(...bid.item.bids.map((b) => b.amount))
-      ).length;
-      const totalSpent = bids.reduce((sum, bid) => sum + bid.amount, 0);
-
-      setStats({ totalItems, activeBids, wonAuctions, totalSpent });
-      setRecentItems(items.slice(0, 5));
-    } catch (error) {
-      console.error("Error fetching dashboard data:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="max-w-6xl mx-auto p-8">
-        <div className="text-center text-lg font-semibold text-gray-600">
-          Loading dashboard...
+  return (
+    <div className="space-y-8">
+      {/* Seller Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
+          <div className="p-3 bg-blue-100 text-blue-600 rounded-lg">
+            <Package className="w-8 h-8" />
+          </div>
+          <div>
+            <h3 className="text-2xl font-bold">{activeItems}</h3>
+            <p className="text-gray-500">Active Listings</p>
+          </div>
+        </div>
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
+          <div className="p-3 bg-green-100 text-green-600 rounded-lg">
+            <Trophy className="w-8 h-8" />
+          </div>
+          <div>
+            <h3 className="text-2xl font-bold">{soldItems}</h3>
+            <p className="text-gray-500">Items Sold</p>
+          </div>
+        </div>
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
+          <div className="p-3 bg-purple-100 text-purple-600 rounded-lg">
+            <DollarSign className="w-8 h-8" />
+          </div>
+          <div>
+            <h3 className="text-2xl font-bold">${totalRevenue}</h3>
+            <p className="text-gray-500">Total Revenue</p>
+          </div>
         </div>
       </div>
-    );
-  }
+
+      {/* Seller Actions */}
+      <div className="flex gap-4">
+        <Link to="/create-item" className="bg-indigo-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-indigo-700 transition flex items-center gap-2">
+          <Plus className="w-5 h-5" /> Create New Auction
+        </Link>
+        <Link to="/my-items" className="bg-white border border-gray-300 text-gray-700 px-6 py-3 rounded-lg font-medium hover:bg-gray-50 transition flex items-center gap-2">
+          <List className="w-5 h-5" /> Manage Inventory
+        </Link>
+      </div>
+
+      {/* Recent Inventory */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="p-6 border-b border-gray-100">
+          <h2 className="text-xl font-bold text-gray-800">Recent Inventory</h2>
+        </div>
+        <div className="divide-y divide-gray-100">
+          {items.slice(0, 5).map(item => (
+            <div key={item._id} className="p-4 flex items-center justify-between hover:bg-gray-50">
+              <div className="flex items-center gap-4">
+                <img src={item.images[0]} alt="" className="w-12 h-12 rounded-lg object-cover bg-gray-200" />
+                <div>
+                  <h4 className="font-semibold text-gray-800">{item.title}</h4>
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${
+                    item.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+                  }`}>
+                    {item.status.toUpperCase()}
+                  </span>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="font-bold text-indigo-600">${item.currentBid || item.basePrice}</p>
+                <p className="text-xs text-gray-500">Current Price</p>
+              </div>
+            </div>
+          ))}
+          {items.length === 0 && <p className="p-6 text-center text-gray-500">No items listed yet.</p>}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// --- BUYER DASHBOARD COMPONENT ---
+const BuyerDashboard = ({ user }) => {
+  const [bids, setBids] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchBids = async () => {
+      try {
+        const { data } = await api.get('/bids/my-bids');
+        setBids(data);
+      } catch (error) {
+        console.error("Fetch bids error", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchBids();
+  }, []);
+
+  const activeBids = bids.filter(b => b.item && b.item.status === 'active');
+  const wonAuctions = bids.filter(b => b.item && b.item.status === 'sold' && b.item.winner === user._id);
+  // Filter for unique items won
+  const uniqueWonItems = [...new Map(wonAuctions.map(b => [b.item._id, b])).values()];
+
+  const totalSpent = uniqueWonItems.reduce((acc, curr) => acc + curr.amount, 0);
+
+  return (
+    <div className="space-y-8">
+       {/* Buyer Stats */}
+       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
+          <div className="p-3 bg-amber-100 text-amber-600 rounded-lg">
+            <Gavel className="w-8 h-8" />
+          </div>
+          <div>
+            <h3 className="text-2xl font-bold">{activeBids.length}</h3>
+            <p className="text-gray-500">Active Bids</p>
+          </div>
+        </div>
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
+          <div className="p-3 bg-green-100 text-green-600 rounded-lg">
+            <Trophy className="w-8 h-8" />
+          </div>
+          <div>
+            <h3 className="text-2xl font-bold">{uniqueWonItems.length}</h3>
+            <p className="text-gray-500">Auctions Won</p>
+          </div>
+        </div>
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
+          <div className="p-3 bg-indigo-100 text-indigo-600 rounded-lg">
+            <CreditCard className="w-8 h-8" />
+          </div>
+          <div>
+            <h3 className="text-2xl font-bold">${totalSpent}</h3>
+            <p className="text-gray-500">Total Spent</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex gap-4">
+        <Link to="/" className="bg-indigo-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-indigo-700 transition flex items-center gap-2">
+          <ShoppingBag className="w-5 h-5" /> Browse Auctions
+        </Link>
+      </div>
+
+      {/* Recent Bids */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="p-6 border-b border-gray-100">
+          <h2 className="text-xl font-bold text-gray-800">Recent Bidding History</h2>
+        </div>
+        <div className="divide-y divide-gray-100">
+          {bids.slice(0, 5).map(bid => (
+            <div key={bid._id} className="p-4 flex items-center justify-between hover:bg-gray-50">
+              <div className="flex items-center gap-4">
+                {bid.item ? (
+                  <>
+                     <img src={bid.item.images?.[0]} alt="" className="w-12 h-12 rounded-lg object-cover bg-gray-200" />
+                     <div>
+                       <h4 className="font-semibold text-gray-800">{bid.item.title}</h4>
+                       <p className="text-xs text-gray-500">
+                         {new Date(bid.createdAt).toLocaleDateString()}
+                       </p>
+                     </div>
+                  </>
+                ) : (
+                  <div className="text-gray-400 italic">Item Deleted</div>
+                )}
+               
+              </div>
+              <div className="text-right">
+                <p className="font-bold text-green-600">${bid.amount}</p>
+                <div className="text-xs">
+                  {bid.item?.status === 'active' && <span className="text-amber-600 flex items-center justify-end gap-1"><Clock size={12}/> Active</span>}
+                  {bid.item?.status === 'sold' && bid.item.winner === user._id && <span className="text-green-600 flex items-center justify-end gap-1"><Trophy size={12}/> Won</span>}
+                  {bid.item?.status === 'sold' && bid.item.winner !== user._id && <span className="text-gray-500">Ended</span>}
+                </div>
+              </div>
+            </div>
+          ))}
+          {bids.length === 0 && <p className="p-6 text-center text-gray-500">No bids placed yet.</p>}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// --- MAIN DASHBOARD CONTAINER ---
+const Dashboard = () => {
+  const { user } = useAuth();
+  
+  // Icon placeholder for preventing error if needed
+  const DollarSign = ({className}) => <span className={className}>$</span>;
 
   return (
     <div className="max-w-6xl mx-auto p-6 md:p-8">
-      {/* Header */}
-      <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold text-gray-800 mb-2">
-          Welcome back, {user.name}!
-        </h1>
-        <p className="text-gray-500 text-lg">
-          Here's what's happening with your auctions
-        </p>
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+        <p className="text-gray-500">Welcome back, {user.name}</p>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-        <div className="bg-white rounded-xl p-6 shadow-md flex items-center gap-4 hover:shadow-xl transition">
-          <div className="text-white text-3xl w-14 h-14 flex items-center justify-center rounded-lg bg-gradient-to-tr from-indigo-500 to-purple-600">
-            📦
-          </div>
-          <div>
-            <h3 className="text-2xl font-bold text-gray-800">
-              {stats.totalItems}
-            </h3>
-            <p className="text-gray-500 font-medium">Total Items</p>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl p-6 shadow-md flex items-center gap-4 hover:shadow-xl transition">
-          <div className="text-white text-3xl w-14 h-14 flex items-center justify-center rounded-lg bg-gradient-to-tr from-indigo-500 to-purple-600">
-            🎯
-          </div>
-          <div>
-            <h3 className="text-2xl font-bold text-gray-800">
-              {stats.activeBids}
-            </h3>
-            <p className="text-gray-500 font-medium">Active Bids</p>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl p-6 shadow-md flex items-center gap-4 hover:shadow-xl transition">
-          <div className="text-white text-3xl w-14 h-14 flex items-center justify-center rounded-lg bg-gradient-to-tr from-indigo-500 to-purple-600">
-            🏆
-          </div>
-          <div>
-            <h3 className="text-2xl font-bold text-gray-800">
-              {stats.wonAuctions}
-            </h3>
-            <p className="text-gray-500 font-medium">Won Auctions</p>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl p-6 shadow-md flex items-center gap-4 hover:shadow-xl transition">
-          <div className="text-white text-3xl w-14 h-14 flex items-center justify-center rounded-lg bg-gradient-to-tr from-indigo-500 to-purple-600">
-            💰
-          </div>
-          <div>
-            <h3 className="text-2xl font-bold text-gray-800">
-              ${stats.totalSpent.toLocaleString()}
-            </h3>
-            <p className="text-gray-500 font-medium">Total Spent</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Sections */}
-      <div className="grid gap-10">
-        {/* Quick Actions */}
-        <div className="bg-white rounded-xl p-6 shadow-md">
-          <div className="flex justify-between items-center border-b border-gray-100 pb-4 mb-6">
-            <h2 className="text-xl font-semibold text-gray-800">
-              Quick Actions
-            </h2>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-            
-            <Link
-              to="/"
-              className="bg-gradient-to-tr from-gray-100 to-gray-200 rounded-lg p-6 text-center hover:shadow-lg hover:-translate-y-1 transition"
-            >
-              <div className="text-2xl mb-3">🔍</div>
-              <h3 className="text-lg font-semibold text-gray-800">
-                Browse Auctions
-              </h3>
-              <p className="text-sm text-gray-500">Find items to bid on</p>
-            </Link>
-            {user.role === "Seller" && (
-              <>
-                <Link
-                  to="/create-item"
-                  className="bg-gradient-to-tr from-gray-100 to-gray-200 rounded-lg p-6 text-center hover:shadow-lg hover:-translate-y-1 transition"
-                >
-                  <div className="text-2xl mb-3">➕</div>
-                  <h3 className="text-lg font-semibold text-gray-800">
-                    Create Item
-                  </h3>
-                  <p className="text-sm text-gray-500">
-                    List a new item for auction
-                  </p>
-                </Link>
-
-                <Link
-                  to="/my-items"
-                  className="bg-gradient-to-tr from-gray-100 to-gray-200 rounded-lg p-6 text-center hover:shadow-lg hover:-translate-y-1 transition"
-                >
-                  <div className="text-2xl mb-3">📋</div>
-                  <h3 className="text-lg font-semibold text-gray-800">
-                    My Items
-                  </h3>
-                  <p className="text-sm text-gray-500">
-                    Manage your listed items
-                  </p>
-                </Link>
-              </>
-            )}
-            {user.role === "Buyer" && (
-              <>  
-                <Link
-                  to="/dashboard/bids"
-                  className="bg-gradient-to-tr from-gray-100 to-gray-200 rounded-lg p-6 text-center hover:shadow-lg hover:-translate-y-1 transition"
-                >
-                  <div className="text-2xl mb-3">📊</div>
-                  <h3 className="text-lg font-semibold text-gray-800">My Bids</h3>
-                  <p className="text-sm text-gray-500">View your bidding history</p>
-                </Link>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* Recent Items */}
-        <div className="bg-white rounded-xl p-6 shadow-md">
-          <div className="flex justify-between items-center border-b border-gray-100 pb-4 mb-6">
-            <h2 className="text-xl font-semibold text-gray-800">
-              Recent Items
-            </h2>
-            <Link
-              to="/"
-              className="text-indigo-500 font-semibold hover:text-purple-600 transition"
-            >
-              View All
-            </Link>
-          </div>
-          <div className="flex flex-col gap-4">
-            {recentItems.length === 0 ? (
-              <div className="text-center py-12 text-gray-500">
-                <p className="mb-4 text-lg">
-                  No items found. Start browsing auctions!
-                </p>
-                <Link
-                  to="/"
-                  className="px-5 py-2 rounded-md bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition"
-                >
-                  Browse Auctions
-                </Link>
-              </div>
-            ) : (
-              recentItems.map((item) => (
-                <div
-                  key={item._id}
-                  className="flex items-center gap-4 p-4 rounded-lg bg-gray-50 hover:bg-gray-100 transition"
-                >
-                  <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-200 flex-shrink-0">
-                    {item.images && item.images.length > 0 ? (
-                      <img
-                        src={item.images[0]}
-                        alt={item.title}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="flex items-center justify-center h-full text-gray-500 text-xs">
-                        No Image
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-md font-semibold text-gray-800">
-                      {item.title}
-                    </h3>
-                    <p className="text-green-600 font-bold">
-                      ${item.currentBid || item.basePrice}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      {new Date(item.endTime) > new Date()
-                        ? `Ends in ${Math.ceil(
-                            (new Date(item.endTime) - new Date()) /
-                              (1000 * 60 * 60 * 24)
-                          )} days`
-                        : "Auction ended"}
-                    </p>
-                  </div>
-                  <Link
-                    to={`/item/${item._id}`}
-                    className="px-3 py-1 rounded-md bg-indigo-50 text-indigo-600 font-medium hover:bg-indigo-100 transition"
-                  >
-                    View
-                  </Link>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-      </div>
+      {user.role === 'Seller' ? <SellerDashboard user={user} /> : <BuyerDashboard user={user} />}
     </div>
   );
 };

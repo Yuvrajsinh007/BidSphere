@@ -92,9 +92,14 @@ const ItemDetail = () => {
     return `${minutes}m left`;
   };
 
-  const isAuctionEnded = item && new Date(item.endTime) < new Date();
+  const isAuctionEnded = item && (new Date(item.endTime) < new Date() || item.status === 'sold' || item.status === 'expired');
   const isAuctionActive = item && item.status === 'active' && !isAuctionEnded;
   const canBid = user && isAuctionActive && user.role === "Buyer" && !user.isBanned;
+  
+  // Logic for winning/losing
+  const didUserBid = user && bids.some(bid => bid.bidder._id === user._id || bid.bidder === user._id);
+  const isWinner = user && item?.winner && (item.winner._id === user._id || item.winner === user._id);
+  const isLoser = isAuctionEnded && didUserBid && !isWinner;
 
   if (loading) {
     return (
@@ -114,10 +119,31 @@ const ItemDetail = () => {
 
   return (
     <div className="max-w-6xl mx-auto p-8">
+      {/* WIN/LOSS ALERTS */}
+      {isWinner && (
+        <div className="mb-6 bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded shadow-sm flex items-center gap-3">
+          <div className="text-2xl">🎉</div>
+          <div>
+            <p className="font-bold text-lg">Congratulations!</p>
+            <p>You have won this auction with a bid of <strong>${item.currentBid}</strong>.</p>
+          </div>
+        </div>
+      )}
+
+      {isLoser && (
+        <div className="mb-6 bg-gray-100 border-l-4 border-gray-500 text-gray-700 p-4 rounded shadow-sm flex items-center gap-3">
+          <div className="text-2xl">😔</div>
+          <div>
+            <p className="font-bold text-lg">Auction Ended</p>
+            <p>Unfortunately, you did not win this item. Better luck next time!</p>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-12">
         {/* Image Section */}
         <div className="flex flex-col gap-4">
-          <div className="w-full h-96 rounded-xl overflow-hidden shadow-lg">
+          <div className="w-full h-96 rounded-xl overflow-hidden shadow-lg bg-gray-200">
             {item.images && item.images.length > 0 ? (
               <img
                 src={item.images[currentImageIndex]}
@@ -166,7 +192,7 @@ const ItemDetail = () => {
                 ${item.currentBid || item.basePrice}
               </span>
             </div>
-            {item.currentBid && (
+            {item.currentBid > item.basePrice && (
               <div className="text-sm text-gray-400 line-through">
                 Base Price: ${item.basePrice}
               </div>
@@ -177,7 +203,7 @@ const ItemDetail = () => {
             <div
               className={`text-sm font-semibold px-4 py-2 rounded-full ${
                 isAuctionEnded
-                  ? "text-gray-400 bg-gray-100"
+                  ? "text-gray-500 bg-gray-200"
                   : "text-red-500 bg-red-50"
               }`}
             >
@@ -260,22 +286,22 @@ const ItemDetail = () => {
             </div>
           )}
 
-          {isAuctionEnded && (
-            <div className="bg-gray-100 p-6 rounded-xl border border-gray-300 text-center">
-              <h3 className="text-gray-500 font-semibold mb-2">
-                🕐 Auction Ended
-              </h3>
-              <p className="text-gray-600">
-                This auction has ended. Check the bid history below.
-              </p>
-              {item.winner && (
-                <div className="mt-4 p-3 bg-green-50 rounded-lg">
-                  <p className="text-green-700 font-semibold">
-                    Winner: {item.winner.name}
-                  </p>
-                </div>
-              )}
-            </div>
+          {isAuctionEnded && !isWinner && !isLoser && (
+             <div className="bg-gray-100 p-6 rounded-xl border border-gray-300 text-center">
+             <h3 className="text-gray-500 font-semibold mb-2">
+               🕐 Auction Ended
+             </h3>
+             <p className="text-gray-600">
+               This auction has ended.
+             </p>
+             {item.winner && (
+               <div className="mt-4 p-3 bg-green-50 rounded-lg inline-block">
+                 <p className="text-green-700 font-semibold">
+                   Winner: {item.winner.name || item.winner}
+                 </p>
+               </div>
+             )}
+           </div>
           )}
 
           {!user && (

@@ -77,24 +77,25 @@ export const AuthProvider = ({ children }) => {
 
   const forgotPassword = async (email) => {
     try {
-      await api.post('/auth/forgot-password', { email });
-      return { success: true };
+      const response = await api.post('/auth/forgot-password', { email });
+      // Return success AND the token needed for the next steps
+      return { success: true, message: response.data.message, token: response.data.token };
     } catch (error) {
-      return { 
-        success: false, 
-        message: error.response?.data?.message || 'Failed to send reset email' 
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Failed to send reset email',
       };
     }
   };
 
-  const resetPassword = async (token, password) => {
+  const resetPassword = async (token, otp, password) => {
     try {
-      await api.post('/auth/reset-password', { token, password });
-      return { success: true };
+      const response = await api.put('/auth/reset-password', { token, otp, password });
+      return { success: true, message: response.data.message };
     } catch (error) {
-      return { 
-        success: false, 
-        message: error.response?.data?.message || 'Password reset failed' 
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Failed to reset password',
       };
     }
   };

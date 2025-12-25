@@ -18,7 +18,9 @@ const upload = require('../middleware/upload');
 router.post('/register', register);
 router.post('/login', login);
 router.post('/forgot-password', forgotPassword);
-router.post('/reset-password', resetPassword);
+
+// ✅ FIX: Changed from POST to PUT to match frontend update logic
+router.put('/reset-password', resetPassword);
 
 // Protected routes
 router.get('/me', protect, getMe);
@@ -27,4 +29,4 @@ router.put('/change-password', protect, changePassword);
 router.post('/profile-pic', protect, upload.single('profilePic'), uploadProfilePic);
 router.delete('/account', protect, deleteAccount);
 
-module.exports = router; 
+module.exports = router;

@@ -1,14 +1,19 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, Navigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 import debounce from '../utils/debounce';
+import { 
+  Search, Filter, Tag, Clock, DollarSign, User, 
+  ChevronLeft, ChevronRight, Image as ImageIcon, 
+  ArrowRight, CheckCircle, XCircle, AlertCircle, ShoppingBag 
+} from 'lucide-react';
 
 const Home = () => {
   const { user, loading } = useAuth();
   const [searchParams] = useSearchParams();
   
-  // 1. Separate Input State (what you see) vs Search State (what fetches data)
+  // 1. Separate Input State vs Search State
   const initialSearch = searchParams.get('search') || '';
   const [inputValue, setInputValue] = useState(initialSearch);
   const [searchTerm, setSearchTerm] = useState(initialSearch);
@@ -22,7 +27,7 @@ const Home = () => {
   const [hasNext, setHasNext] = useState(false);
   const [hasPrev, setHasPrev] = useState(false);
   
-  // Update state if URL changes (e.g. from Navbar)
+  // Update state if URL changes
   useEffect(() => {
     const query = searchParams.get('search') || '';
     setInputValue(query);
@@ -35,7 +40,7 @@ const Home = () => {
       const params = new URLSearchParams({
         page: currentPage,
         limit: 12,
-        search: searchTerm, // Uses the debounced term
+        search: searchTerm,
         category: category,
         status: status
       });
@@ -52,7 +57,7 @@ const Home = () => {
     }
   }, [currentPage, searchTerm, category, status]);
   
-  // 2. Create debounced function that ONLY updates the API search term
+  // 2. Debounced update
   const debouncedUpdate = useCallback(
     debounce((value) => {
       setSearchTerm(value);
@@ -61,11 +66,11 @@ const Home = () => {
     []
   );
 
-  // 3. Handle Input Change: Updates text box immediately, API later
+  // 3. Handle Input Change
   const handleInputChange = (e) => {
     const value = e.target.value;
-    setInputValue(value); // Immediate UI update (No lag)
-    debouncedUpdate(value); // Background API update
+    setInputValue(value);
+    debouncedUpdate(value);
   };
 
   useEffect(() => {
@@ -109,179 +114,241 @@ const Home = () => {
     const endTime = new Date(item.endTime);
     
     if (item.status === 'sold') {
-      return <span className="text-green-600 bg-green-50">Sold</span>;
+      return (
+        <span className="flex items-center gap-1 bg-green-100 text-green-700 text-xs font-semibold px-2.5 py-0.5 rounded-full border border-green-200">
+          <CheckCircle className="w-3 h-3" /> Sold
+        </span>
+      );
     } else if (item.status === 'closed') {
-      return <span className="text-gray-600 bg-gray-50">Closed</span>;
+      return (
+        <span className="flex items-center gap-1 bg-gray-100 text-gray-700 text-xs font-semibold px-2.5 py-0.5 rounded-full border border-gray-200">
+          <XCircle className="w-3 h-3" /> Closed
+        </span>
+      );
     } else if (endTime <= now) {
-      return <span className="text-red-600 bg-red-50">Expired</span>;
+      return (
+        <span className="flex items-center gap-1 bg-red-100 text-red-700 text-xs font-semibold px-2.5 py-0.5 rounded-full border border-red-200">
+          <Clock className="w-3 h-3" /> Expired
+        </span>
+      );
     } else {
-      return <span className="text-blue-600 bg-blue-50">Active</span>;
+      return (
+        <span className="flex items-center gap-1 bg-blue-100 text-blue-700 text-xs font-semibold px-2.5 py-0.5 rounded-full border border-blue-200">
+          <AlertCircle className="w-3 h-3" /> Active
+        </span>
+      );
     }
   };
 
-  // 4. REMOVED the "if (loadingItems) return ..." block that was causing the refresh issue.
-  // Instead, we render the page structure immediately.
-
   return (
-    <div className="max-w-6xl mx-auto p-8">
-      {/* Hero Section */}
-      <div className="text-center mb-12 py-12 bg-gradient-to-br from-gray-100 to-gray-300 rounded-2xl">
-        <h1 className="text-4xl font-bold text-gray-800 mb-4">Welcome to BidSphere</h1>
-        <p className="text-lg text-gray-600">Discover unique items and place your bids</p>
-      </div>
-
-      {/* Filters */}
-      <div className="mb-7">
-        <form onSubmit={(e) => e.preventDefault()} className="flex flex-wrap gap-4 items-center">
-          <div className="flex-1 min-w-[260px]">
-            {/* 5. Fully Controlled Input */}
-            <input
-              type="text"
-              placeholder="Search items..."
-              value={inputValue} // Bind to local state
-              onChange={handleInputChange} // Handle typing smoothly
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-base focus:outline-none focus:border-indigo-500"
-            />
+    <div className="min-h-screen bg-gray-50/50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        {/* Hero Section */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 md:p-12 mb-8 text-center bg-[url('https://images.unsplash.com/photo-1557683316-973673baf926?auto=format&fit=crop&q=80')] bg-cover bg-center relative overflow-hidden group">
+          <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/90 to-purple-900/90 backdrop-blur-[2px]"></div>
+          <div className="relative z-10 space-y-4">
+            <h1 className="text-4xl md:text-5xl font-extrabold text-white tracking-tight">
+              Discover Unique Auctions
+            </h1>
+            <p className="text-lg md:text-xl text-indigo-100 max-w-2xl mx-auto font-light">
+              Bid on exclusive items, collectibles, and rare finds in real-time.
+            </p>
           </div>
-
-          <div className="flex gap-4">
-            <select
-              value={category}
-              onChange={handleCategoryChange}
-              className="px-4 py-2.5 border border-gray-300 rounded-lg text-base bg-white cursor-pointer focus:outline-none focus:border-indigo-500"
-            >
-              <option value="">All Categories</option>
-              <option value="Electronics">Electronics</option>
-              <option value="Fashion">Fashion</option>
-              <option value="Home & Garden">Home & Garden</option>
-              <option value="Sports">Sports</option>
-              <option value="Books">Books</option>
-              <option value="Collectibles">Collectibles</option>
-              <option value="Art">Art</option>
-              <option value="Jewelry">Jewelry</option>
-              <option value="Automotive">Automotive</option>
-              <option value="Other">Other</option>
-            </select>
-
-            <select
-              value={status}
-              onChange={handleStatusChange}
-              className="px-4 py-2.5 border border-gray-300 rounded-lg text-base bg-white cursor-pointer focus:outline-none focus:border-indigo-500"
-            >
-              <option value="active">Active</option>
-              <option value="ended">Ended</option>
-              <option value="">All</option>
-            </select>
-          </div>
-        </form>
-      </div>
-
-      {/* 6. Loading State is handled HERE, inside the content area */}
-      {loadingItems ? (
-        <div className="flex justify-center items-center h-64">
-           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
         </div>
-      ) : (
-        <>
-          {/* Items Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {items.length === 0 ? (
-              <div className="col-span-full text-center p-12 text-gray-500">
-                <h3 className="text-xl font-semibold mb-2">No items found</h3>
-                <p>Try adjusting your search criteria</p>
+
+        {/* Filters & Search Bar */}
+        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-8 sticky top-4 z-20">
+          <form onSubmit={(e) => e.preventDefault()} className="flex flex-col md:flex-row gap-4 items-center">
+            
+            {/* Search Input */}
+            <div className="relative flex-1 w-full">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search className="h-5 w-5 text-gray-400" />
               </div>
-            ) : (
-              items.map(item => (
-                <div
-                  key={item._id}
-                  className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transform hover:-translate-y-1 transition"
-                >
-                  <div className="relative h-52 overflow-hidden">
-                    {item.images && item.images.length > 0 ? (
-                      <img
-                        src={item.images[0]}
-                        alt={item.title}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-500 text-lg">
-                        No Image
-                      </div>
-                    )}
-                    <div className="absolute top-2 right-2 bg-indigo-500 text-white text-xs px-3 py-1 rounded-full">
-                      {item.category}
-                    </div>
-                    <div className="absolute top-2 left-2">
-                      {getStatusBadge(item)}
-                    </div>
-                  </div>
-
-                  <div className="p-6">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-2">{item.title}</h3>
-                    <p className="text-gray-600 text-sm mb-4 line-clamp-2">{item.description}</p>
-
-                    <div className="flex justify-between items-center mb-4">
-                      <div>
-                        <span className="text-xl font-bold text-green-600">
-                          ${item.currentBid || item.basePrice}
-                        </span>
-                        {item.currentBid && (
-                          <span className="text-sm text-gray-400 line-through ml-2">
-                            Base: ${item.basePrice}
-                          </span>
-                        )}
-                      </div>
-                      <span
-                        className={`text-sm font-medium px-3 py-1 rounded-full ${
-                          new Date(item.endTime) < new Date()
-                            ? 'text-gray-400 bg-gray-100'
-                            : 'text-red-600 bg-red-50'
-                        }`}
-                      >
-                        {formatTimeLeft(item.endTime)}
-                      </span>
-                    </div>
-
-                    <div className="text-sm text-gray-500 mb-4">
-                      Seller: {item.seller?.name || 'Unknown'}
-                    </div>
-
-                    <Link
-                      to={`/item/${item._id}`}
-                      className="block w-full py-3 text-center rounded-lg font-semibold text-white bg-gradient-to-r from-indigo-500 to-purple-600 hover:scale-[1.02] transition"
-                    >
-                      View Details
-                    </Link>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="mt-8 flex justify-center items-center gap-4">
-              <button
-                onClick={() => setCurrentPage(currentPage - 1)}
-                disabled={!hasPrev}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Previous
-              </button>
-              <span className="text-gray-600">
-                Page {currentPage} of {totalPages}
-              </span>
-              <button
-                onClick={() => setCurrentPage(currentPage + 1)}
-                disabled={!hasNext}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Next
-              </button>
+              <input
+                type="text"
+                placeholder="Search for items..."
+                value={inputValue}
+                onChange={handleInputChange}
+                className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg leading-5 bg-gray-50 placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 sm:text-sm transition-all duration-200"
+              />
             </div>
-          )}
-        </>
-      )}
+
+            {/* Dropdowns */}
+            <div className="flex gap-4 w-full md:w-auto">
+              <div className="relative w-full md:w-48">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Tag className="h-4 w-4 text-gray-500" />
+                </div>
+                <select
+                  value={category}
+                  onChange={handleCategoryChange}
+                  className="block w-full pl-9 pr-8 py-2.5 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-lg bg-white shadow-sm cursor-pointer"
+                >
+                  <option value="">All Categories</option>
+                  <option value="Electronics">Electronics</option>
+                  <option value="Fashion">Fashion</option>
+                  <option value="Home & Garden">Home & Garden</option>
+                  <option value="Sports">Sports</option>
+                  <option value="Books">Books</option>
+                  <option value="Collectibles">Collectibles</option>
+                  <option value="Art">Art</option>
+                  <option value="Jewelry">Jewelry</option>
+                  <option value="Automotive">Automotive</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+
+              <div className="relative w-full md:w-40">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Filter className="h-4 w-4 text-gray-500" />
+                </div>
+                <select
+                  value={status}
+                  onChange={handleStatusChange}
+                  className="block w-full pl-9 pr-8 py-2.5 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-lg bg-white shadow-sm cursor-pointer"
+                >
+                  <option value="active">Active</option>
+                  <option value="ended">Ended</option>
+                  <option value="">All Status</option>
+                </select>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        {/* Content Area */}
+        {loadingItems ? (
+          <div className="flex flex-col justify-center items-center h-64 space-y-4">
+             <div className="animate-spin rounded-full h-12 w-12 border-4 border-indigo-200 border-t-indigo-600"></div>
+             <p className="text-gray-500 font-medium">Finding treasures...</p>
+          </div>
+        ) : (
+          <>
+            {/* Items Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {items.length === 0 ? (
+                <div className="col-span-full flex flex-col items-center justify-center p-12 bg-white rounded-2xl border border-dashed border-gray-300 text-center">
+                  <div className="p-4 bg-gray-50 rounded-full mb-4">
+                    <Search className="h-8 w-8 text-gray-400" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-1">No items found</h3>
+                  <p className="text-gray-500 max-w-sm mx-auto">
+                    We couldn't find any items matching your search. Try adjusting your filters or search term.
+                  </p>
+                </div>
+              ) : (
+                items.map(item => (
+                  <Link 
+                    key={item._id} 
+                    to={`/item/${item._id}`}
+                    className="group bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col h-full"
+                  >
+                    {/* Image Container */}
+                    <div className="relative h-48 sm:h-56 overflow-hidden bg-gray-100">
+                      {item.images && item.images.length > 0 ? (
+                        <img
+                          src={item.images[0]}
+                          alt={item.title}
+                          className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
+                          <ImageIcon className="h-10 w-10 mb-2" />
+                          <span className="text-sm">No Image</span>
+                        </div>
+                      )}
+                      
+                      {/* Floating Badges */}
+                      <div className="absolute top-3 right-3">
+                        {getStatusBadge(item)}
+                      </div>
+                      <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm text-gray-800 text-xs font-semibold px-2.5 py-1 rounded-md shadow-sm border border-gray-100 flex items-center gap-1">
+                        <Tag className="w-3 h-3 text-indigo-500" />
+                        {item.category}
+                      </div>
+                    </div>
+
+                    {/* Card Content */}
+                    <div className="p-5 flex flex-col flex-grow">
+                      <div className="mb-4">
+                        <h3 className="text-lg font-bold text-gray-900 mb-1 line-clamp-1 group-hover:text-indigo-600 transition-colors">
+                          {item.title}
+                        </h3>
+                        <p className="text-gray-500 text-sm line-clamp-2 min-h-[40px]">
+                          {item.description}
+                        </p>
+                      </div>
+
+                      <div className="mt-auto space-y-4">
+                        {/* Price & Time Row */}
+                        <div className="flex justify-between items-end border-t border-gray-50 pt-4">
+                          <div>
+                            <p className="text-xs text-gray-400 font-medium uppercase tracking-wider mb-0.5">Current Bid</p>
+                            <div className="flex items-center gap-1 text-green-600 font-bold text-xl">
+                              <DollarSign className="w-5 h-5" />
+                              {item.currentBid || item.basePrice}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                             <div className={`flex items-center justify-end gap-1 text-sm font-medium ${
+                                new Date(item.endTime) < new Date() ? 'text-gray-400' : 'text-amber-600'
+                             }`}>
+                               <Clock className="w-4 h-4" />
+                               {formatTimeLeft(item.endTime)}
+                             </div>
+                             <p className="text-xs text-gray-400 mt-0.5">Time Left</p>
+                          </div>
+                        </div>
+
+                        {/* Footer Row */}
+                        <div className="flex items-center justify-between pt-2">
+                          <div className="flex items-center gap-2 text-xs text-gray-500">
+                            <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center border border-gray-200">
+                              <User className="w-3 h-3 text-gray-600" />
+                            </div>
+                            <span className="truncate max-w-[100px]">{item.seller?.name || 'Unknown'}</span>
+                          </div>
+                          
+                          <span className="text-indigo-600 text-sm font-semibold flex items-center gap-1 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
+                            Bid Now <ArrowRight className="w-4 h-4" />
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                ))
+              )}
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="mt-12 flex justify-center items-center gap-2">
+                <button
+                  onClick={() => setCurrentPage(currentPage - 1)}
+                  disabled={!hasPrev}
+                  className="flex items-center gap-1 px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm font-medium"
+                >
+                  <ChevronLeft className="w-4 h-4" /> Previous
+                </button>
+                
+                <span className="px-4 py-2 text-gray-600 font-medium bg-gray-100 rounded-lg">
+                  Page <span className="text-indigo-600 font-bold">{currentPage}</span> of {totalPages}
+                </span>
+                
+                <button
+                  onClick={() => setCurrentPage(currentPage + 1)}
+                  disabled={!hasNext}
+                  className="flex items-center gap-1 px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm font-medium"
+                >
+                  Next <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 };

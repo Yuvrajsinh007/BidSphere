@@ -1,9 +1,8 @@
 import React, { useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 
 const ResetPassword = () => {
-  const { token } = useParams();
   const [formData, setFormData] = useState({
     password: "",
     confirmPassword: "",
@@ -13,6 +12,17 @@ const ResetPassword = () => {
   const [success, setSuccess] = useState(false);
 
   const { resetPassword } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+  
+  const { token, otp } = location.state || {};
+
+  // Redirect if accessed directly without flow
+  if (!token || !otp) {
+    // You might want to use useEffect for navigation to avoid render errors
+    setTimeout(() => navigate("/forgot-password"), 0);
+    return null;
+  }
 
   const handleChange = (e) => {
     setFormData({
@@ -37,7 +47,8 @@ const ResetPassword = () => {
 
     setLoading(true);
     try {
-      const result = await resetPassword(token, formData.password);
+      // Call reset with Token, OTP, and New Password
+      const result = await resetPassword(token, otp, formData.password);
       if (result.success) {
         setSuccess(true);
       } else {
@@ -52,22 +63,18 @@ const ResetPassword = () => {
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-tr from-indigo-500 to-purple-600">
-        <div className="bg-white rounded-2xl shadow-2xl p-10 w-full max-w-md text-center">
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">
-            Password Reset Successful
-          </h2>
-          <p className="text-gray-500 text-sm mb-6">
-            Your password has been updated successfully.
-          </p>
-
-          <div className="bg-green-50 border border-green-200 text-green-700 p-4 rounded-lg mb-6 text-sm">
-            You can now log in with your new password.
+      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-indigo-600 via-purple-600 to-indigo-800">
+        <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl p-8 text-center">
+          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span className="text-3xl">✅</span>
           </div>
-
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Password Reset Successful</h2>
+          <p className="text-gray-600 text-sm mb-6">
+            Your password has been updated. You can now log in.
+          </p>
           <Link
             to="/login"
-            className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md hover:shadow-xl transition-transform transform hover:-translate-y-0.5"
+            className="inline-block w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl hover:from-indigo-700 hover:to-purple-700 transition-all"
           >
             Go to Login
           </Link>
@@ -77,81 +84,54 @@ const ResetPassword = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-tr from-indigo-500 to-purple-600">
-      <div className="bg-white rounded-2xl shadow-2xl p-10 w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-indigo-600 via-purple-600 to-indigo-800">
+      <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl p-8 sm:p-10">
         <div className="text-center mb-8">
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">
-            Reset Password
-          </h2>
-          <p className="text-gray-500 text-base">
-            Enter your new password
-          </p>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Set New Password</h2>
+          <p className="text-gray-500 text-sm">Enter your new secure password.</p>
         </div>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg mb-6 text-sm">
+          <div className="mb-6 p-4 rounded-lg bg-red-50 border-l-4 border-red-500 text-red-700 text-sm">
             {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-          <div className="flex flex-col gap-2">
-            <label
-              htmlFor="password"
-              className="font-semibold text-sm text-gray-800"
-            >
-              New Password
-            </label>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
             <input
               type="password"
-              id="password"
               name="password"
               value={formData.password}
               onChange={handleChange}
               required
-              placeholder="Enter your new password"
-              minLength="6"
-              className="px-4 py-3 border-2 border-gray-200 rounded-lg text-base focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 placeholder-gray-400"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none"
+              placeholder="••••••••"
             />
           </div>
 
-          <div className="flex flex-col gap-2">
-            <label
-              htmlFor="confirmPassword"
-              className="font-semibold text-sm text-gray-800"
-            >
-              Confirm New Password
-            </label>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
             <input
               type="password"
-              id="confirmPassword"
               name="confirmPassword"
               value={formData.confirmPassword}
               onChange={handleChange}
               required
-              placeholder="Confirm your new password"
-              minLength="6"
-              className="px-4 py-3 border-2 border-gray-200 rounded-lg text-base focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 placeholder-gray-400"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none"
+              placeholder="••••••••"
             />
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold py-3 rounded-lg text-base shadow-md hover:shadow-xl transition-transform transform hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed"
+            className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl hover:from-indigo-700 hover:to-purple-700 transition-all transform active:scale-95 disabled:opacity-70"
           >
-            {loading ? "Updating..." : "Update Password"}
+            {loading ? "Updating..." : "Reset Password"}
           </button>
         </form>
-
-        <div className="mt-6 text-center">
-          <Link
-            to="/login"
-            className="text-indigo-500 font-medium hover:text-purple-600 hover:underline"
-          >
-            Back to Login
-          </Link>
-        </div>
       </div>
     </div>
   );

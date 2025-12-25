@@ -3,6 +3,8 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const nodemailer = require('nodemailer');
 const PasswordResetToken = require('../models/PasswordResetToken');
+// ADD THIS: Import crypto at the top level
+const crypto = require('crypto');
 
 // Generate JWT Token
 const generateToken = (id) => {
@@ -190,7 +192,6 @@ exports.uploadProfilePic = async (req, res) => {
   }
 };
 
-
 // Delete account
 exports.deleteAccount = async (req, res) => {
   try {
@@ -227,9 +228,9 @@ exports.forgotPassword = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Generate reset token
-    const resetToken = require('crypto').randomBytes(32).toString('hex');
-    const hashedToken = require('crypto').createHash('sha256').update(resetToken).digest('hex');
+    // UPDATED: Use the top-level crypto variable
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
 
     // Generate 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -281,8 +282,8 @@ exports.resetPassword = async (req, res) => {
   try {
     const { token, password } = req.body;
 
-    // Hash the token
-    const hashedToken = require('crypto').createHash('sha256').update(token).digest('hex');
+    // UPDATED: Use the top-level crypto variable
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
 
     // Find reset token
     const resetToken = await PasswordResetToken.findOne({

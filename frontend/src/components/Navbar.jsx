@@ -30,12 +30,14 @@ const Navbar = () => {
                 >
                   Home
                 </Link>
-                <Link
-                  to="/dashboard"
-                  className="text-gray-600 hover:text-indigo-600 transition"
-                >
-                  Dashboard
-                </Link>
+                {user.role !== 'Admin' && (
+                  <Link
+                    to="/dashboard"
+                    className="text-gray-600 hover:text-indigo-600 transition"
+                  >
+                    Dashboard
+                  </Link>
+                )}
                 {user.role === 'Seller' && (
                   <>
                     <Link
