@@ -4,7 +4,7 @@ import { useAuth } from "../contexts/AuthContext";
 import api from "../services/api";
 import { 
   Package, ShoppingBag, Gavel, Trophy, CreditCard, 
-  Plus, List, TrendingUp, Clock, AlertCircle, DollarSign
+  Plus, List, Clock, DollarSign
 } from 'lucide-react';
 
 // --- SELLER DASHBOARD COMPONENT ---
@@ -26,11 +26,20 @@ const SellerDashboard = ({ user }) => {
     fetchItems();
   }, []);
 
+  // 1. Sort items by date (Newest First) to ensure "Recent Inventory" is correct
+  const sortedItems = [...items].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  // 2. Calculate Stats based on the fetched items
   const activeItems = items.filter(i => i.status === 'active').length;
   const soldItems = items.filter(i => i.status === 'sold').length;
+  
+  // Calculate revenue only from items that are actually marked as 'sold'
   const totalRevenue = items
     .filter(i => i.status === 'sold')
-    .reduce((acc, curr) => acc + (curr.currentBid || 0), 0);
+    .reduce((acc, curr) => acc + (curr.currentBid || curr.basePrice || 0), 0);
+
+  // 3. Get the latest 5 items for the list
+  const recentInventory = sortedItems.slice(0, 5);
 
   return (
     <div className="space-y-8">
@@ -59,7 +68,7 @@ const SellerDashboard = ({ user }) => {
             <DollarSign className="w-8 h-8" />
           </div>
           <div>
-            <h3 className="text-2xl font-bold">${totalRevenue}</h3>
+            <h3 className="text-2xl font-bold">${totalRevenue.toLocaleString()}</h3>
             <p className="text-gray-500">Total Revenue</p>
           </div>
         </div>
@@ -75,32 +84,55 @@ const SellerDashboard = ({ user }) => {
         </Link>
       </div>
 
-      {/* Recent Inventory */}
+      {/* Recent Inventory (Latest 5 Items) */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="p-6 border-b border-gray-100">
           <h2 className="text-xl font-bold text-gray-800">Recent Inventory</h2>
         </div>
         <div className="divide-y divide-gray-100">
-          {items.slice(0, 5).map(item => (
-            <div key={item._id} className="p-4 flex items-center justify-between hover:bg-gray-50">
-              <div className="flex items-center gap-4">
-                <img src={item.images[0]} alt="" className="w-12 h-12 rounded-lg object-cover bg-gray-200" />
-                <div>
-                  <h4 className="font-semibold text-gray-800">{item.title}</h4>
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${
-                    item.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
-                  }`}>
-                    {item.status.toUpperCase()}
-                  </span>
+          {recentInventory.length > 0 ? (
+            recentInventory.map(item => (
+              <div key={item._id} className="p-4 flex items-center justify-between hover:bg-gray-50">
+                <div className="flex items-center gap-4">
+                  {/* Image with fallback */}
+                  <div className="w-12 h-12 rounded-lg bg-gray-100 overflow-hidden flex-shrink-0">
+                    {item.images && item.images.length > 0 ? (
+                      <img src={item.images[0]} alt={item.title} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gray-400">
+                        <Package size={20} />
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-semibold text-gray-800">{item.title}</h4>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                        item.status === 'active' ? 'bg-green-100 text-green-700' : 
+                        item.status === 'sold' ? 'bg-blue-100 text-blue-700' : 
+                        'bg-gray-100 text-gray-600'
+                      }`}>
+                        {item.status.toUpperCase()}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        {new Date(item.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="text-right">
+                  <p className="font-bold text-indigo-600">${item.currentBid || item.basePrice}</p>
+                  <p className="text-xs text-gray-500">
+                    {item.status === 'sold' ? 'Sold Price' : 'Current Bid'}
+                  </p>
                 </div>
               </div>
-              <div className="text-right">
-                <p className="font-bold text-indigo-600">${item.currentBid || item.basePrice}</p>
-                <p className="text-xs text-gray-500">Current Price</p>
-              </div>
-            </div>
-          ))}
-          {items.length === 0 && <p className="p-6 text-center text-gray-500">No items listed yet.</p>}
+            ))
+          ) : (
+            <p className="p-6 text-center text-gray-500">No items listed yet.</p>
+          )}
         </div>
       </div>
     </div>
@@ -127,10 +159,9 @@ const BuyerDashboard = ({ user }) => {
   }, []);
 
   const activeBids = bids.filter(b => b.item && b.item.status === 'active');
-  // 1. Filter for items you won
   const wonAuctions = bids.filter(b => b.item && b.item.status === 'sold' && b.item.winner === user._id);
 
-  // 2. Deduplicate items correctly (Keep the one with the HIGHEST bid amount)
+  // Deduplicate won items
   const uniqueWonMap = new Map();
   wonAuctions.forEach(bid => {
       const existing = uniqueWonMap.get(bid.item._id);
@@ -140,9 +171,7 @@ const BuyerDashboard = ({ user }) => {
   });
   const uniqueWonItems = Array.from(uniqueWonMap.values());
 
-  // 3. Calculate Total (Use the item's currentBid if available, otherwise the highest bid amount)
   const totalSpent = uniqueWonItems.reduce((acc, curr) => {
-      // Prefer the item's final recorded price (currentBid) over the bid amount to be accurate
       const price = curr.item.currentBid || curr.amount; 
       return acc + price;
   }, 0);
@@ -197,13 +226,13 @@ const BuyerDashboard = ({ user }) => {
               <div className="flex items-center gap-4">
                 {bid.item ? (
                   <>
-                     <img src={bid.item.images?.[0]} alt="" className="w-12 h-12 rounded-lg object-cover bg-gray-200" />
-                     <div>
-                       <h4 className="font-semibold text-gray-800">{bid.item.title}</h4>
-                       <p className="text-xs text-gray-500">
-                         {new Date(bid.createdAt).toLocaleDateString()}
-                       </p>
-                     </div>
+                      <img src={bid.item.images?.[0]} alt="" className="w-12 h-12 rounded-lg object-cover bg-gray-200" />
+                      <div>
+                        <h4 className="font-semibold text-gray-800">{bid.item.title}</h4>
+                        <p className="text-xs text-gray-500">
+                          {new Date(bid.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
                   </>
                 ) : (
                   <div className="text-gray-400 italic">Item Deleted</div>
@@ -230,9 +259,6 @@ const BuyerDashboard = ({ user }) => {
 // --- MAIN DASHBOARD CONTAINER ---
 const Dashboard = () => {
   const { user } = useAuth();
-  
-  // Icon placeholder for preventing error if needed
-  const DollarSign = ({className}) => <span className={className}>$</span>;
 
   return (
     <div className="max-w-6xl mx-auto p-6 md:p-8">

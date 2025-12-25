@@ -109,11 +109,69 @@ exports.toggleUserBan = async (req, res) => {
       return res.status(403).json({ message: 'Cannot ban admin users.' });
     }
 
+    // Toggle the ban status
     user.isBanned = !user.isBanned;
     await user.save();
 
+    // --- CASCADING LOGIC IF USER IS BANNED ---
+    if (user.isBanned) {
+      console.log(`User ${user.email} banned. Starting cleanup...`);
+
+      // 1. IF USER IS A SELLER: Delete their items and bids on those items
+      const userItems = await Item.find({ seller: user._id });
+      const userItemIds = userItems.map(i => i._id);
+
+      if (userItemIds.length > 0) {
+        // Delete all bids on these items first
+        await Bid.deleteMany({ item: { $in: userItemIds } });
+        // Delete the items themselves
+        await Item.deleteMany({ _id: { $in: userItemIds } });
+        console.log(`Deleted ${userItems.length} items from banned seller.`);
+      }
+
+      // 2. IF USER IS A BIDDER: Delete their bids and Recalculate Item Prices
+      // Find all bids by this user
+      const userBids = await Bid.find({ bidder: user._id });
+      
+      if (userBids.length > 0) {
+        // Get list of unique items this user bid on
+        const affectedItemIds = [...new Set(userBids.map(b => b.item.toString()))];
+
+        // Delete the user's bids
+        await Bid.deleteMany({ bidder: user._id });
+
+        // RECALCULATE PRICE for every item they bid on
+        for (const itemId of affectedItemIds) {
+          const item = await Item.findById(itemId);
+          
+          // Only process if item still exists (wasn't deleted in step 1)
+          if (item) {
+            // Find the NEW highest bid
+            const highestBid = await Bid.findOne({ item: itemId }).sort({ amount: -1 });
+
+            if (highestBid) {
+              item.currentBid = highestBid.amount;
+              // If the banned user was the winner, assign to next highest
+              if (item.winner && item.winner.toString() === user._id.toString()) {
+                item.winner = highestBid.bidder;
+              }
+            } else {
+              // No bids left? Reset to base price
+              item.currentBid = item.basePrice;
+              item.winner = null; // Remove winner if no bids remain
+              if (item.status === 'sold') {
+                 item.status = 'active'; // Re-open auction if it was sold to the banned user
+              }
+            }
+            await item.save();
+          }
+        }
+        console.log(`Removed bids from ${affectedItemIds.length} items and recalculated prices.`);
+      }
+    }
+
     res.json({ 
-      message: `User ${user.isBanned ? 'banned' : 'unbanned'} successfully.`,
+      message: `User ${user.isBanned ? 'banned and associated data cleaned' : 'unbanned'} successfully.`,
       user: {
         _id: user._id,
         name: user.name,
@@ -214,13 +272,14 @@ exports.deleteItem = async (req, res) => {
       return res.status(404).json({ message: 'Item not found.' });
     }
 
-    // Delete associated bids
+    // 1. Delete all bids associated with this item
+    // This effectively "cancels" the bids for the buyers
     await Bid.deleteMany({ item: itemId });
     
-    // Delete the item
+    // 2. Delete the item
     await Item.findByIdAndDelete(itemId);
 
-    res.json({ message: 'Item deleted successfully.' });
+    res.json({ message: 'Item and all associated bids deleted successfully.' });
   } catch (error) {
     console.error('Delete item error:', error);
     res.status(500).json({ message: 'Server error.' });
@@ -267,18 +326,44 @@ exports.getAllBids = async (req, res) => {
 exports.deleteBid = async (req, res) => {
   try {
     const { bidId } = req.params;
-    const bid = await Bid.findById(bidId);
     
-    if (!bid) {
+    // 1. Find the bid first so we know which Item it belongs to
+    const bidToDelete = await Bid.findById(bidId);
+    
+    if (!bidToDelete) {
       return res.status(404).json({ message: 'Bid not found.' });
     }
 
+    const itemId = bidToDelete.item; // Save the item ID before deleting
+
+    // 2. Delete the bid
     await Bid.findByIdAndDelete(bidId);
 
-    res.json({ message: 'Bid deleted successfully.' });
+    // 3. Recalculate the Item's currentBid
+    const item = await Item.findById(itemId);
+    
+    if (item) {
+      // Find the NEW highest bid for this item
+      const highestBid = await Bid.findOne({ item: itemId }).sort({ amount: -1 });
+
+      if (highestBid) {
+        // If other bids exist, set price to the next highest bid
+        item.currentBid = highestBid.amount;
+        
+        // Optional: If your app tracks the "current winner" internally before the auction ends, 
+        // you might want to update it here too, though usually 'winner' is set when status becomes 'sold'.
+        // item.winner = highestBid.bidder; 
+      } else {
+        // If NO bids remain, revert to the starting base price
+        item.currentBid = item.basePrice;
+      }
+      
+      await item.save();
+    }
+
+    res.json({ message: 'Bid deleted and item price updated successfully.' });
   } catch (error) {
     console.error('Delete bid error:', error);
     res.status(500).json({ message: 'Server error.' });
   }
 };
-

@@ -94,18 +94,41 @@ const sendAuctionResultEmails = async (item, winningBid) => {
 // Add item
 exports.addItem = async (req, res) => {
   try {
-    const { title, description, category, basePrice, auctionDuration } = req.body;
+    const { title, description, category, basePrice, auctionDuration, customEndTime } = req.body;
     
     let imageUrls = [];
     if (req.files && req.files.length > 0) {
       imageUrls = req.files.map(file => file.path);
     }
 
-    if (!title || !description || !category || !basePrice || !auctionDuration) {
+    // Validation: Require title, desc, cat, price. 
+    // AND require EITHER auctionDuration OR customEndTime
+    if (!title || !description || !category || !basePrice || (!auctionDuration && !customEndTime)) {
       return res.status(400).json({ message: 'All fields are required.' });
     }
     
-    const endTime = new Date(Date.now() + auctionDuration * 60 * 60 * 1000);
+    let endTime;
+    let finalDuration;
+
+    // LOGIC: Determine End Time
+    if (customEndTime) {
+      // 1. User provided a specific date/time
+      endTime = new Date(customEndTime);
+      
+      // Validation: Must be in future
+      if (endTime <= new Date()) {
+        return res.status(400).json({ message: 'End time must be in the future.' });
+      }
+
+      // Calculate approximate duration in hours for the DB schema (since it's required)
+      const diffMs = endTime - Date.now();
+      finalDuration = diffMs / (1000 * 60 * 60); 
+
+    } else {
+      // 2. User provided fixed duration (hours)
+      finalDuration = parseFloat(auctionDuration);
+      endTime = new Date(Date.now() + finalDuration * 60 * 60 * 1000);
+    }
     
     const item = await Item.create({
       seller: req.user._id,
@@ -115,7 +138,7 @@ exports.addItem = async (req, res) => {
       images: imageUrls,
       basePrice,
       currentBid: basePrice,
-      auctionDuration,
+      auctionDuration: finalDuration, // Store calculated or provided duration
       endTime,
     });
     
@@ -202,11 +225,15 @@ exports.getItemById = async (req, res) => {
 // View seller's items
 exports.getMyItems = async (req, res) => {
   try {
+    // 1. Fetch items where 'seller' matches the logged-in user's ID
+    // 2. Sort by 'createdAt' descending (-1) so newest are first
     const items = await Item.find({ seller: req.user._id })
       .populate('seller', 'name email')
       .populate('winner', 'name email')
       .sort({ createdAt: -1 });
     
+    // 3. Update statuses (Active -> Expired/Sold) if time has passed
+    // This ensures your Dashboard stats (Active vs Sold) are accurate right now
     for (let item of items) {
       await checkAndProcessAuctionEnd(item);
     }
@@ -251,9 +278,9 @@ exports.editItem = async (req, res) => {
       console.error('Edit item error:', error);
       res.status(500).json({ message: 'Server error.' });
     }
-  };
+};
   
-  exports.deleteItem = async (req, res) => {
+exports.deleteItem = async (req, res) => {
     try {
       const item = await Item.findById(req.params.id);
       if (!item) return res.status(404).json({ message: 'Item not found.' });
@@ -268,9 +295,9 @@ exports.editItem = async (req, res) => {
       console.error('Delete item error:', error);
       res.status(500).json({ message: 'Server error.' });
     }
-  };
+};
 
-  exports.getBidHistory = async (req, res) => {
+exports.getBidHistory = async (req, res) => {
     try {
       const item = await Item.findById(req.params.id);
       if (!item) return res.status(404).json({ message: 'Item not found.' });
@@ -282,9 +309,9 @@ exports.editItem = async (req, res) => {
       console.error('Get bid history error:', error);
       res.status(500).json({ message: 'Server error.' });
     }
-  };
+};
 
-  exports.getItemBids = async (req, res) => {
+exports.getItemBids = async (req, res) => {
     try {
       const bids = await Bid.find({ item: req.params.id }).populate('bidder', 'name email').sort({ createdAt: -1 });
       res.json(bids);
@@ -292,9 +319,9 @@ exports.editItem = async (req, res) => {
       console.error('Get item bids error:', error);
       res.status(500).json({ message: 'Server error.' });
     }
-  }; 
+}; 
   
-  exports.uploadImages = async (req, res) => {
+exports.uploadImages = async (req, res) => {
       try {
         const item = await Item.findById(req.params.id);
         if (!item) return res.status(404).json({ message: 'Item not found.' });
@@ -313,4 +340,4 @@ exports.editItem = async (req, res) => {
         console.error('Upload images error:', error);
         res.status(500).json({ message: 'Server error.' });
       }
-  };
+};
