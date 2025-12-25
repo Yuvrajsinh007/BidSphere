@@ -5,8 +5,14 @@ const upload = require('../middleware/upload');
 // Add item
 exports.addItem = async (req, res) => {
   try {
-    const { title, description, category, images, basePrice, auctionDuration } = req.body;
+    const { title, description, category, basePrice, auctionDuration } = req.body;
     
+    // Get image URLs from Cloudinary (uploaded via middleware)
+    let imageUrls = [];
+    if (req.files && req.files.length > 0) {
+      imageUrls = req.files.map(file => file.path);
+    }
+
     // Validate input
     if (!title || !description || !category || !basePrice || !auctionDuration) {
       return res.status(400).json({ message: 'All fields are required.' });
@@ -27,7 +33,7 @@ exports.addItem = async (req, res) => {
       title,
       description,
       category,
-      images: images || [],
+      images: imageUrls,
       basePrice,
       currentBid: basePrice,
       auctionDuration,

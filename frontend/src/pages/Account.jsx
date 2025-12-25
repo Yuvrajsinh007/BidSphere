@@ -2,6 +2,12 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import api from "../services/api";
+import axios from "axios";
+
+// Component defined outside to prevent refreshing
+const TabWrapper = ({ children }) => (
+  <div className="space-y-6 animate-fadeIn">{children}</div>
+);
 
 const Account = () => {
   const { user, logout } = useAuth();
@@ -46,46 +52,47 @@ const Account = () => {
     }
   }, [user]);
 
-  // ✅ Profile Update
+  // --- Handlers ---
+
+  // 1. Profile Update
   const handleProfileUpdate = async (e) => {
     e.preventDefault();
     setLoading(true);
     setMessage({ type: "", text: "" });
+
     try {
       const response = await api.put("/auth/profile", profileData);
       setMessage({ type: "success", text: "Profile updated successfully!" });
-      localStorage.setItem("user", JSON.stringify(response.data));
-      window.location.reload();
+      
+      const updatedUser = { ...user, ...response.data };
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+      setTimeout(() => window.location.reload(), 1000);
     } catch (error) {
       setMessage({
         type: "error",
-        text:
-          error.response?.data?.message || "Failed to update profile",
+        text: error.response?.data?.message || "Failed to update profile",
       });
     } finally {
       setLoading(false);
     }
   };
 
-  // ✅ Password Change
+  // 2. Password Change
   const handlePasswordChange = async (e) => {
     e.preventDefault();
-    setLoading(true);
     setMessage({ type: "", text: "" });
 
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       setMessage({ type: "error", text: "New passwords do not match" });
-      setLoading(false);
       return;
     }
+
     if (passwordData.newPassword.length < 6) {
-      setMessage({
-        type: "error",
-        text: "Password must be at least 6 characters",
-      });
-      setLoading(false);
+      setMessage({ type: "error", text: "Password must be at least 6 characters" });
       return;
     }
+
+    setLoading(true);
     try {
       await api.put("/auth/change-password", {
         currentPassword: passwordData.currentPassword,
@@ -96,21 +103,21 @@ const Account = () => {
     } catch (error) {
       setMessage({
         type: "error",
-        text:
-          error.response?.data?.message || "Failed to change password",
+        text: error.response?.data?.message || "Failed to change password",
       });
     } finally {
       setLoading(false);
     }
   };
 
-  // ✅ Profile Picture Upload
+  // 3. Profile Picture Upload
   const handleProfilePicUpload = async (e) => {
     e.preventDefault();
     if (!profilePic) {
-      setMessage({ type: "error", text: "Please select an image" });
+      setMessage({ type: "error", text: "Please select an image first" });
       return;
     }
+
     setLoading(true);
     setMessage({ type: "", text: "" });
 
@@ -118,47 +125,49 @@ const Account = () => {
     formData.append("profilePic", profilePic);
 
     try {
-      const response = await api.post("/auth/profile-pic", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
+      const token = localStorage.getItem("token");
+      const baseURL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      
+      const response = await axios.post(`${baseURL}/auth/profile-pic`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        }
       });
-      setMessage({
-        type: "success",
-        text: "Profile picture updated successfully!",
-      });
+
+      setMessage({ type: "success", text: "Profile picture updated!" });
       setProfilePicPreview(response.data.profilePic);
       setProfilePic(null);
+      
+      const updatedUser = { ...user, profilePic: response.data.profilePic };
+      localStorage.setItem("user", JSON.stringify(updatedUser));
 
-      const currentUser = JSON.parse(localStorage.getItem("user"));
-      currentUser.profilePic = response.data.profilePic;
-      localStorage.setItem("user", JSON.stringify(currentUser));
+      setTimeout(() => window.location.reload(), 1000);
     } catch (error) {
+      console.error("Upload error:", error);
       setMessage({
         type: "error",
-        text:
-          error.response?.data?.message || "Failed to upload profile picture",
+        text: error.response?.data?.message || "Failed to upload profile picture",
       });
     } finally {
       setLoading(false);
     }
   };
 
-  // ✅ Delete Account
+  // 4. Delete Account
   const handleDeleteAccount = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setMessage({ type: "", text: "" });
-
     if (deleteData.confirmText !== "DELETE") {
       setMessage({ type: "error", text: "Please type DELETE to confirm" });
-      setLoading(false);
       return;
     }
 
+    setLoading(true);
     try {
       await api.delete("/auth/account", {
-        data: { password: deleteData.password },
+        data: { password: deleteData.password }, 
       });
-      setMessage({ type: "success", text: "Account deleted successfully!" });
+
+      setMessage({ type: "success", text: "Account deleted. Goodbye!" });
       setTimeout(() => {
         logout();
         navigate("/");
@@ -166,15 +175,13 @@ const Account = () => {
     } catch (error) {
       setMessage({
         type: "error",
-        text:
-          error.response?.data?.message || "Failed to delete account",
+        text: error.response?.data?.message || "Failed to delete account",
       });
     } finally {
       setLoading(false);
     }
   };
 
-  // ✅ File Change
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -185,260 +192,267 @@ const Account = () => {
     }
   };
 
-  const TabWrapper = ({ children }) => (
-    <div className="space-y-6">{children}</div>
-  );
-
-  if (!user)
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        Loading...
-      </div>
-    );
+  if (!user) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
 
   return (
-    <div className="min-h-screen bg-gray-100 p-8">
+    <div className="min-h-screen bg-gray-100 p-4 md:p-8">
       <div className="max-w-[1200px] mx-auto">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">
-            Account Settings
-          </h1>
-          <p className="text-gray-500 text-lg">
-            Manage your account information and preferences
-          </p>
+        <div className="text-center mb-10">
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">Account Settings</h1>
+          <p className="text-gray-500">Manage your profile and preferences</p>
         </div>
 
-        {/* Alerts */}
         {message.text && (
-          <div
-            className={`mb-6 p-4 rounded-lg border ${
-              message.type === "success"
-                ? "bg-green-100 border-green-400 text-green-700"
-                : "bg-red-100 border-red-400 text-red-700"
-            }`}
-          >
-            {message.text}
+          <div className={`mb-6 p-4 rounded-lg border flex items-center justify-between ${
+            message.type === "success" 
+              ? "bg-green-100 border-green-400 text-green-700" 
+              : "bg-red-100 border-red-400 text-red-700"
+          }`}>
+            <span>{message.text}</span>
+            <button onClick={() => setMessage({ type: "", text: "" })} className="font-bold">×</button>
           </div>
         )}
 
-        <div className="grid md:grid-cols-[300px_1fr] gap-6 bg-white rounded-xl shadow-md overflow-hidden">
-          {/* Sidebar */}
-          <div className="bg-gradient-to-br from-blue-600 to-purple-700 text-white p-6 flex flex-col">
-            <div className="text-center mb-6 pb-6 border-b border-white/20">
-              {user.profilePic ? (
-                <img
-                  src={user.profilePic}
-                  alt={user.name}
-                  className="w-20 h-20 mx-auto rounded-full object-cover border-2 border-white/30 mb-2"
-                />
-              ) : (
-                <div className="w-20 h-20 mx-auto rounded-full bg-white/20 border-2 border-white/30 flex items-center justify-center text-2xl font-bold mb-2">
-                  {user.name.charAt(0).toUpperCase()}
-                </div>
-              )}
-              <h3 className="text-lg font-semibold">{user.name}</h3>
-              <p className="text-sm opacity-90">{user.email}</p>
-              <span className="inline-block mt-2 px-3 py-1 rounded-full text-xs font-semibold uppercase bg-white/20">
-                {user.role}
-              </span>
+        <div className="grid md:grid-cols-[280px_1fr] gap-6 bg-white rounded-xl shadow-md overflow-hidden min-h-[500px]">
+          <div className="bg-gradient-to-b from-indigo-800 to-indigo-900 text-white p-6">
+            <div className="flex flex-col items-center mb-8 pb-8 border-b border-indigo-700">
+              <div className="w-24 h-24 rounded-full border-4 border-indigo-400 overflow-hidden mb-3 bg-white">
+                 {profilePicPreview || user.profilePic ? (
+                   <img 
+                     src={profilePicPreview || user.profilePic} 
+                     alt="Profile" 
+                     className="w-full h-full object-cover" 
+                   />
+                 ) : (
+                   <div className="w-full h-full flex items-center justify-center text-indigo-800 text-3xl font-bold">
+                     {user.name?.charAt(0).toUpperCase()}
+                   </div>
+                 )}
+              </div>
+              <h3 className="font-bold text-lg">{user.name}</h3>
+              <p className="text-indigo-300 text-sm">{user.email}</p>
             </div>
 
-            <nav className="flex flex-col gap-2">
-              {["profile", "password", "profile-pic", "delete"].map((tab) => (
+            <nav className="space-y-2">
+              {[
+                { id: "profile", icon: "👤", label: "Profile Info" },
+                { id: "password", icon: "🔒", label: "Security" },
+                { id: "profile-pic", icon: "📷", label: "Profile Picture" },
+                { id: "delete", icon: "⚠️", label: "Delete Account" },
+              ].map((tab) => (
                 <button
-                  key={tab}
-                  className={`flex items-center gap-2 p-3 rounded-lg text-left text-white text-sm font-medium transition-all duration-300 ${
-                    activeTab === tab
-                      ? "bg-white/20 font-semibold"
-                      : "hover:bg-white/10"
+                  key={tab.id}
+                  onClick={() => { setActiveTab(tab.id); setMessage({type:"", text:""}); }}
+                  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+                    activeTab === tab.id 
+                      ? "bg-white text-indigo-900 font-semibold shadow-md" 
+                      : "hover:bg-indigo-700 text-indigo-100"
                   }`}
-                  onClick={() => setActiveTab(tab)}
                 >
-                  {tab === "profile" && "👤 Profile"}
-                  {tab === "password" && "🔒 Password"}
-                  {tab === "profile-pic" && "📷 Profile Picture"}
-                  {tab === "delete" && "🗑️ Delete Account"}
+                  <span>{tab.icon}</span>
+                  <span>{tab.label}</span>
                 </button>
               ))}
             </nav>
           </div>
 
-          {/* Main Content */}
-          <div className="p-6">
-            {/* Profile Tab */}
+          <div className="p-8">
             {activeTab === "profile" && (
               <TabWrapper>
-                <h2 className="text-2xl font-semibold text-gray-800">
-                  Profile Information
-                </h2>
-                <form onSubmit={handleProfileUpdate} className="space-y-4 max-w-lg">
-                  {["name", "email", "phone"].map((field) => (
-                    <div key={field} className="flex flex-col">
-                      <label className="font-semibold text-gray-700 capitalize">
-                        {field}
-                      </label>
+                <h2 className="text-2xl font-bold text-gray-800 border-b pb-4 mb-6">Personal Information</h2>
+                <form onSubmit={handleProfileUpdate} className="space-y-5 max-w-xl">
+                  <div className="grid md:grid-cols-2 gap-5">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
                       <input
-                        type={
-                          field === "email"
-                            ? "email"
-                            : field === "phone"
-                            ? "tel"
-                            : "text"
-                        }
-                        value={profileData[field]}
-                        onChange={(e) =>
-                          setProfileData({ ...profileData, [field]: e.target.value })
-                        }
-                        className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-100"
-                        required
+                        type="text"
+                        value={profileData.name}
+                        onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
+                        className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
                       />
                     </div>
-                  ))}
-                  {["address", "bio"].map((field) => (
-                    <div key={field} className="flex flex-col">
-                      <label className="font-semibold text-gray-700 capitalize">
-                        {field}
-                      </label>
-                      <textarea
-                        value={profileData[field]}
-                        onChange={(e) =>
-                          setProfileData({ ...profileData, [field]: e.target.value })
-                        }
-                        rows={field === "bio" ? 4 : 3}
-                        className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-100"
-                        placeholder={field === "bio" ? "Tell us about yourself..." : ""}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                      <input
+                        type="email"
+                        value={profileData.email}
+                        disabled={true} // ✅ FIX: Email is read-only
+                        className="w-full p-2.5 border rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed outline-none"
                       />
                     </div>
-                  ))}
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="px-6 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-purple-700 text-white font-semibold hover:shadow-lg transition-transform transform hover:-translate-y-1 disabled:opacity-70 disabled:cursor-not-allowed"
-                  >
-                    {loading ? "Updating..." : "Update Profile"}
-                  </button>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                      <input
+                        type="tel"
+                        value={profileData.phone}
+                        onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
+                        className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                      <input
+                        type="text"
+                        value={profileData.address}
+                        onChange={(e) => setProfileData({ ...profileData, address: e.target.value })}
+                        className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Bio</label>
+                    <textarea
+                      rows="4"
+                      value={profileData.bio}
+                      onChange={(e) => setProfileData({ ...profileData, bio: e.target.value })}
+                      className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                      placeholder="Tell us a bit about yourself..."
+                    />
+                  </div>
+
+                  <div className="pt-4">
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="px-6 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition shadow-sm disabled:opacity-50 font-medium"
+                    >
+                      {loading ? "Saving..." : "Save Changes"}
+                    </button>
+                  </div>
                 </form>
               </TabWrapper>
             )}
 
-            {/* Password Tab */}
             {activeTab === "password" && (
               <TabWrapper>
-                <h2 className="text-2xl font-semibold text-gray-800">
-                  Change Password
-                </h2>
-                <form onSubmit={handlePasswordChange} className="space-y-4 max-w-lg">
-                  {["currentPassword", "newPassword", "confirmPassword"].map(
-                    (field, idx) => (
-                      <div key={field} className="flex flex-col">
-                        <label className="font-semibold text-gray-700">
-                          {idx === 0
-                            ? "Current Password"
-                            : idx === 1
-                            ? "New Password"
-                            : "Confirm New Password"}
-                        </label>
-                        <input
-                          type="password"
-                          value={passwordData[field]}
-                          onChange={(e) =>
-                            setPasswordData({ ...passwordData, [field]: e.target.value })
-                          }
-                          className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-100"
-                          minLength={field === "newPassword" ? 6 : undefined}
-                          required
-                        />
-                      </div>
-                    )
-                  )}
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="px-6 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-purple-700 text-white font-semibold hover:shadow-lg transition-transform transform hover:-translate-y-1 disabled:opacity-70 disabled:cursor-not-allowed"
-                  >
-                    {loading ? "Changing..." : "Change Password"}
-                  </button>
+                <h2 className="text-2xl font-bold text-gray-800 border-b pb-4 mb-6">Change Password</h2>
+                <form onSubmit={handlePasswordChange} className="space-y-5 max-w-md">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
+                    <input
+                      type="password"
+                      required
+                      value={passwordData.currentPassword}
+                      onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                      className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+                    <input
+                      type="password"
+                      required
+                      minLength="6"
+                      value={passwordData.newPassword}
+                      onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                      className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
+                    <input
+                      type="password"
+                      required
+                      value={passwordData.confirmPassword}
+                      onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                      className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                    />
+                  </div>
+
+                  <div className="pt-4">
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="px-6 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition shadow-sm disabled:opacity-50 font-medium"
+                    >
+                      {loading ? "Updating..." : "Update Password"}
+                    </button>
+                  </div>
                 </form>
               </TabWrapper>
             )}
 
-            {/* Profile Pic Tab */}
             {activeTab === "profile-pic" && (
               <TabWrapper>
-                <h2 className="text-2xl font-semibold text-gray-800">
-                  Profile Picture
-                </h2>
-                <div className="flex flex-col items-center gap-4">
-                  {profilePicPreview ? (
-                    <img
-                      src={profilePicPreview}
-                      alt="Profile Preview"
-                      className="w-32 h-32 rounded-full object-cover border-2 border-blue-600"
-                    />
-                  ) : (
-                    <div className="w-32 h-32 rounded-full bg-gray-200 border-2 border-blue-600 flex items-center justify-center text-gray-400 text-2xl font-bold">
-                      ?
-                    </div>
-                  )}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileChange}
-                    className="block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700"
-                  />
-                  <button
-                    onClick={handleProfilePicUpload}
-                    disabled={loading || !profilePic}
-                    className="px-6 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-purple-700 text-white font-semibold hover:shadow-lg transition-transform transform hover:-translate-y-1 disabled:opacity-70 disabled:cursor-not-allowed"
-                  >
-                    {loading ? "Uploading..." : "Upload"}
-                  </button>
+                <h2 className="text-2xl font-bold text-gray-800 border-b pb-4 mb-6">Update Profile Picture</h2>
+                <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50">
+                  <div className="w-40 h-40 rounded-full overflow-hidden shadow-lg mb-6 border-4 border-white">
+                    {profilePicPreview ? (
+                      <img src={profilePicPreview} alt="Preview" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-400">No Image</div>
+                    )}
+                  </div>
+                  
+                  <div className="w-full max-w-xs text-center space-y-4">
+                    <label className="block">
+                      <span className="sr-only">Choose profile photo</span>
+                      <input 
+                        type="file" 
+                        accept="image/*"
+                        onChange={handleFileChange}
+                        className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer" 
+                      />
+                    </label>
+                    <button
+                      onClick={handleProfilePicUpload}
+                      disabled={loading || !profilePic}
+                      className="w-full px-6 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                    >
+                      {loading ? "Uploading..." : "Upload New Picture"}
+                    </button>
+                    <p className="text-xs text-gray-400">Supported formats: JPG, PNG, JPEG</p>
+                  </div>
                 </div>
               </TabWrapper>
             )}
 
-            {/* Delete Tab */}
             {activeTab === "delete" && (
               <TabWrapper>
-                <h2 className="text-2xl font-semibold text-gray-800">
-                  Delete Account
-                </h2>
-                <p className="mb-4 text-gray-600">
-                  Type <span className="font-bold text-red-600">DELETE</span> to
-                  confirm account deletion. This action cannot be undone.
-                </p>
-                <form onSubmit={handleDeleteAccount} className="space-y-4 max-w-lg">
-                  <input
-                    type="password"
-                    placeholder="Enter your password"
-                    value={deleteData.password}
-                    onChange={(e) =>
-                      setDeleteData({ ...deleteData, password: e.target.value })
-                    }
-                    required
-                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-red-600 focus:ring-1 focus:ring-red-100"
-                  />
-                  <input
-                    type="text"
-                    placeholder='Type "DELETE" to confirm'
-                    value={deleteData.confirmText}
-                    onChange={(e) =>
-                      setDeleteData({ ...deleteData, confirmText: e.target.value })
-                    }
-                    required
-                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-red-600 focus:ring-1 focus:ring-red-100"
-                  />
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="px-6 py-2 rounded-lg bg-red-600 text-white font-semibold hover:shadow-lg transition-transform transform hover:-translate-y-1 disabled:opacity-70 disabled:cursor-not-allowed"
-                  >
-                    {loading ? "Deleting..." : "Delete Account"}
-                  </button>
-                </form>
+                <h2 className="text-2xl font-bold text-red-600 border-b pb-4 mb-6">Delete Account</h2>
+                <div className="bg-red-50 p-6 rounded-xl border border-red-100">
+                  <h3 className="font-bold text-red-800 mb-2">Warning: This action is irreversible</h3>
+                  <p className="text-red-600 mb-6 text-sm">
+                    Deleting your account will remove all your data, bids, and listed items. Please be certain.
+                  </p>
+                  
+                  <form onSubmit={handleDeleteAccount} className="space-y-4 max-w-md">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Enter Password to Confirm</label>
+                      <input
+                        type="password"
+                        required
+                        value={deleteData.password}
+                        onChange={(e) => setDeleteData({ ...deleteData, password: e.target.value })}
+                        className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-red-500 outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Type "DELETE"</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="DELETE"
+                        value={deleteData.confirmText}
+                        onChange={(e) => setDeleteData({ ...deleteData, confirmText: e.target.value })}
+                        className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-red-500 outline-none"
+                      />
+                    </div>
+                    <div className="pt-2">
+                      <button
+                        type="submit"
+                        disabled={loading}
+                        className="px-6 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition shadow-sm disabled:opacity-50 font-medium"
+                      >
+                        {loading ? "Deleting Account..." : "Permanently Delete Account"}
+                      </button>
+                    </div>
+                  </form>
+                </div>
               </TabWrapper>
             )}
+            
           </div>
         </div>
       </div>

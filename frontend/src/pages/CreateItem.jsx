@@ -56,34 +56,30 @@ const CreateItem = () => {
     setLoading(true);
 
     try {
-      // First create the item without images
-      const itemData = {
-        ...formData,
-        basePrice: parseFloat(formData.basePrice),
-        auctionDuration: parseInt(formData.auctionDuration),
-        images: [],
-      };
+      // Use FormData to send both text data and files
+      const data = new FormData();
+      data.append("title", formData.title);
+      data.append("description", formData.description);
+      data.append("category", formData.category);
+      data.append("basePrice", formData.basePrice);
+      data.append("auctionDuration", formData.auctionDuration);
 
-      const response = await api.post("/seller/items", itemData);
-      const itemId = response.data._id;
+      // Append all selected images
+      imageFiles.forEach((file) => {
+        data.append("images", file);
+      });
 
-      // Then upload images if any
-      if (imageFiles.length > 0) {
-        const formDataImages = new FormData();
-        imageFiles.forEach((file) => {
-          formDataImages.append("images", file);
-        });
-
-        await api.post(`/seller/items/${itemId}/images`, formDataImages, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        });
-      }
+      // Send single request to create item with images
+      await api.post("/seller/items", data, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
 
       navigate("/my-items");
     } catch (error) {
       setError(error.response?.data?.message || "Failed to create item");
+      console.error("Create item error:", error);
     } finally {
       setLoading(false);
     }

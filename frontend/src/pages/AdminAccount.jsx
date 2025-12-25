@@ -1,40 +1,45 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import api from '../services/api';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
+import api from "../services/api";
+import axios from "axios"; 
+
+const TabWrapper = ({ children }) => (
+  <div className="space-y-6 animate-fadeIn">{children}</div>
+);
 
 const AdminAccount = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
-  const [activeTab, setActiveTab] = useState('profile');
+  const [activeTab, setActiveTab] = useState("profile");
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState({ type: '', text: '' });
+  const [message, setMessage] = useState({ type: "", text: "" });
 
   const [profileData, setProfileData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    address: '',
-    bio: ''
+    name: "",
+    email: "",
+    phone: "",
+    address: "",
+    bio: "",
   });
 
   const [passwordData, setPasswordData] = useState({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: ''
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
   });
 
   const [adminSettings, setAdminSettings] = useState({
     emailNotifications: true,
     systemAlerts: true,
     autoBanSuspiciousUsers: false,
-    requireApprovalForItems: false
+    requireApprovalForItems: false,
   });
 
   const [deleteData, setDeleteData] = useState({
-    password: '',
-    confirmText: ''
+    password: "",
+    confirmText: "",
   });
 
   const [profilePic, setProfilePic] = useState(null);
@@ -43,27 +48,34 @@ const AdminAccount = () => {
   useEffect(() => {
     if (user) {
       setProfileData({
-        name: user.name || '',
-        email: user.email || '',
-        phone: user.phone || '',
-        address: user.address || '',
-        bio: user.bio || ''
+        name: user.name || "",
+        email: user.email || "",
+        phone: user.phone || "",
+        address: user.address || "",
+        bio: user.bio || "",
       });
       setProfilePicPreview(user.profilePic);
     }
   }, [user]);
 
+  // --- Handlers ---
+
   const handleProfileUpdate = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setMessage({ type: '', text: '' });
+    setMessage({ type: "", text: "" });
     try {
-      const response = await api.put('/auth/profile', profileData);
-      setMessage({ type: 'success', text: 'Profile updated successfully!' });
-      localStorage.setItem('user', JSON.stringify(response.data));
-      window.location.reload();
+      const response = await api.put("/auth/profile", profileData);
+      setMessage({ type: "success", text: "Profile updated successfully!" });
+      
+      const updatedUser = { ...user, ...response.data };
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+      setTimeout(() => window.location.reload(), 1000);
     } catch (error) {
-      setMessage({ type: 'error', text: error.response?.data?.message || 'Failed to update profile' });
+      setMessage({
+        type: "error",
+        text: error.response?.data?.message || "Failed to update profile",
+      });
     } finally {
       setLoading(false);
     }
@@ -72,29 +84,32 @@ const AdminAccount = () => {
   const handlePasswordChange = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setMessage({ type: '', text: '' });
+    setMessage({ type: "", text: "" });
 
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      setMessage({ type: 'error', text: 'New passwords do not match' });
+      setMessage({ type: "error", text: "New passwords do not match" });
       setLoading(false);
       return;
     }
 
     if (passwordData.newPassword.length < 6) {
-      setMessage({ type: 'error', text: 'Password must be at least 6 characters' });
+      setMessage({ type: "error", text: "Password must be at least 6 characters" });
       setLoading(false);
       return;
     }
 
     try {
-      await api.put('/auth/change-password', {
+      await api.put("/auth/change-password", {
         currentPassword: passwordData.currentPassword,
-        newPassword: passwordData.newPassword
+        newPassword: passwordData.newPassword,
       });
-      setMessage({ type: 'success', text: 'Password changed successfully!' });
-      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      setMessage({ type: "success", text: "Password changed successfully!" });
+      setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" });
     } catch (error) {
-      setMessage({ type: 'error', text: error.response?.data?.message || 'Failed to change password' });
+      setMessage({
+        type: "error",
+        text: error.response?.data?.message || "Failed to change password",
+      });
     } finally {
       setLoading(false);
     }
@@ -103,65 +118,49 @@ const AdminAccount = () => {
   const handleAdminSettingsUpdate = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setMessage({ type: '', text: '' });
-    try {
-      setMessage({ type: 'success', text: 'Admin settings updated successfully!' });
-    } catch (error) {
-      setMessage({ type: 'error', text: error.response?.data?.message || 'Failed to update admin settings' });
-    } finally {
-      setLoading(false);
-    }
+    setTimeout(() => {
+        setMessage({ type: "success", text: "Admin settings updated successfully!" });
+        setLoading(false);
+    }, 800);
   };
 
   const handleProfilePicUpload = async (e) => {
     e.preventDefault();
     if (!profilePic) {
-      setMessage({ type: 'error', text: 'Please select an image' });
+      setMessage({ type: "error", text: "Please select an image first" });
       return;
     }
     setLoading(true);
-    setMessage({ type: '', text: '' });
+    setMessage({ type: "", text: "" });
 
     const formData = new FormData();
-    formData.append('profilePic', profilePic);
+    formData.append("profilePic", profilePic);
 
     try {
-      const response = await api.post('/auth/profile-pic', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+      const token = localStorage.getItem("token");
+      const baseURL = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
+      
+      const response = await axios.post(`${baseURL}/auth/profile-pic`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
-      setMessage({ type: 'success', text: 'Profile picture updated successfully!' });
+
+      setMessage({ type: "success", text: "Profile picture updated successfully!" });
       setProfilePicPreview(response.data.profilePic);
       setProfilePic(null);
-      const currentUser = JSON.parse(localStorage.getItem('user'));
+      
+      const currentUser = JSON.parse(localStorage.getItem("user"));
       currentUser.profilePic = response.data.profilePic;
-      localStorage.setItem('user', JSON.stringify(currentUser));
+      localStorage.setItem("user", JSON.stringify(currentUser));
+      
+      setTimeout(() => window.location.reload(), 1000);
     } catch (error) {
-      setMessage({ type: 'error', text: error.response?.data?.message || 'Failed to upload profile picture' });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDeleteAccount = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setMessage({ type: '', text: '' });
-
-    if (deleteData.confirmText !== 'DELETE') {
-      setMessage({ type: 'error', text: 'Please type DELETE to confirm' });
-      setLoading(false);
-      return;
-    }
-
-    try {
-      await api.delete('/auth/account', { data: { password: deleteData.password } });
-      setMessage({ type: 'success', text: 'Account deleted successfully!' });
-      setTimeout(() => {
-        logout();
-        navigate('/');
-      }, 2000);
-    } catch (error) {
-      setMessage({ type: 'error', text: error.response?.data?.message || 'Failed to delete account' });
+      console.error("Upload error:", error);
+      setMessage({
+        type: "error",
+        text: error.response?.data?.message || "Failed to upload profile picture",
+      });
     } finally {
       setLoading(false);
     }
@@ -177,7 +176,7 @@ const AdminAccount = () => {
     }
   };
 
-  if (!user || user.role !== 'Admin') {
+  if (!user || user.role !== "Admin") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
         <div className="bg-white p-10 rounded-xl shadow-lg text-center max-w-lg">
@@ -189,209 +188,243 @@ const AdminAccount = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 p-8">
+    <div className="min-h-screen bg-gray-100 p-4 md:p-8">
       <div className="max-w-[1200px] mx-auto">
-        <div className="text-center mb-12">
+        <div className="text-center mb-10">
           <h1 className="text-3xl font-bold text-gray-800 mb-2">Admin Account Settings</h1>
-          <p className="text-gray-500 text-lg">Manage your admin account and system preferences</p>
+          <p className="text-gray-500">Manage system preferences and personal details</p>
         </div>
 
         {message.text && (
-          <div className={`mb-6 p-4 rounded-lg border ${message.type === 'success' ? 'bg-green-100 border-green-400 text-green-700' : 'bg-red-100 border-red-400 text-red-700'}`}>
-            {message.text}
+          <div
+            className={`mb-6 p-4 rounded-lg border flex items-center justify-between ${
+              message.type === "success"
+                ? "bg-green-100 border-green-400 text-green-700"
+                : "bg-red-100 border-red-400 text-red-700"
+            }`}
+          >
+            <span>{message.text}</span>
+            <button onClick={() => setMessage({ type: "", text: "" })} className="font-bold">
+              ×
+            </button>
           </div>
         )}
 
-        <div className="grid md:grid-cols-[300px_1fr] gap-6 bg-white rounded-xl shadow-md overflow-hidden">
+        <div className="grid md:grid-cols-[280px_1fr] gap-6 bg-white rounded-xl shadow-md overflow-hidden min-h-[500px]">
           {/* Sidebar */}
-          <div className="bg-gradient-to-br from-red-600 to-red-700 text-white p-6 flex flex-col">
-            <div className="text-center mb-6 pb-6 border-b border-white/20">
-              {user.profilePic ? (
-                <img src={`http://localhost:5000${user.profilePic}`} alt={user.name} className="w-20 h-20 mx-auto rounded-full object-cover border-2 border-white/30 mb-2"/>
-              ) : (
-                <div className="w-20 h-20 mx-auto rounded-full bg-red-500/30 border-2 border-red-500/50 flex items-center justify-center text-2xl font-bold mb-2">
-                  {user.name.charAt(0).toUpperCase()}
-                </div>
-              )}
-              <h3 className="text-lg font-semibold">{user.name}</h3>
-              <p className="text-sm opacity-90">{user.email}</p>
-              <span className="inline-block mt-2 px-3 py-1 rounded-full text-xs font-semibold bg-red-700/80 uppercase">{user.role}</span>
+          <div className="bg-gradient-to-b from-red-700 to-red-900 text-white p-6">
+            <div className="flex flex-col items-center mb-8 pb-8 border-b border-red-600">
+              <div className="w-24 h-24 rounded-full border-4 border-red-400 overflow-hidden mb-3 bg-white">
+                {profilePicPreview || user.profilePic ? (
+                  <img
+                    src={profilePicPreview || user.profilePic}
+                    alt="Profile"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-red-800 text-3xl font-bold">
+                    {user.name?.charAt(0).toUpperCase()}
+                  </div>
+                )}
+              </div>
+              <h3 className="font-bold text-lg">{user.name}</h3>
+              <p className="text-red-200 text-sm">{user.email}</p>
+              <span className="inline-block mt-2 px-3 py-0.5 rounded-full text-xs font-semibold bg-red-800/80 border border-red-500 uppercase tracking-wide">
+                Admin
+              </span>
             </div>
 
-            <nav className="flex flex-col gap-2">
+            <nav className="space-y-2">
               {[
-                { key: 'profile', label: 'Profile', icon: '👤' },
-                { key: 'password', label: 'Password', icon: '🔒' },
-                // { key: 'admin-settings', label: 'Admin Settings', icon: '⚙️' },
-                { key: 'profile-pic', label: 'Profile Picture', icon: '📷' },
-                // { key: 'delete', label: 'Delete Account', icon: '🗑️' },
-              ].map(tab => (
+                { id: "profile", icon: "👤", label: "Profile Info" },
+                { id: "password", icon: "🔒", label: "Security" },
+                { id: "admin-settings", icon: "⚙️", label: "System Config" },
+                { id: "profile-pic", icon: "📷", label: "Profile Picture" },
+              ].map((tab) => (
                 <button
-                  key={tab.key}
-                  className={`flex items-center gap-2 p-3 rounded-lg text-left text-white text-sm font-medium transition-all duration-300 ${activeTab === tab.key ? 'bg-white/20 font-semibold' : 'hover:bg-white/10'}`}
-                  onClick={() => setActiveTab(tab.key)}
+                  key={tab.id}
+                  onClick={() => {
+                    setActiveTab(tab.id);
+                    setMessage({ type: "", text: "" });
+                  }}
+                  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+                    activeTab === tab.id
+                      ? "bg-white text-red-900 font-semibold shadow-md"
+                      : "hover:bg-red-800 text-red-100"
+                  }`}
                 >
-                  <span>{tab.icon}</span> {tab.label}
+                  <span>{tab.icon}</span>
+                  <span>{tab.label}</span>
                 </button>
               ))}
             </nav>
           </div>
 
-          {/* Main content */}
-          <div className="p-6">
+          {/* Main Content */}
+          <div className="p-8">
             {/* Profile Tab */}
-            {activeTab === 'profile' && (
-              <div>
-                <h2 className="text-2xl font-semibold text-gray-800 mb-6">Profile Information</h2>
-                <form onSubmit={handleProfileUpdate} className="max-w-lg space-y-4">
-                  {['name', 'email', 'phone'].map((field) => (
+            {activeTab === "profile" && (
+              <TabWrapper>
+                <h2 className="text-2xl font-bold text-gray-800 border-b pb-4 mb-6">Profile Information</h2>
+                <form onSubmit={handleProfileUpdate} className="space-y-5 max-w-xl">
+                  {["name", "email", "phone"].map((field) => (
                     <div key={field}>
-                      <label className="block text-gray-800 font-semibold mb-1 capitalize">{field}</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1 capitalize">
+                        {field}
+                      </label>
                       <input
-                        type={field === 'email' ? 'email' : field === 'phone' ? 'tel' : 'text'}
+                        type={field === "email" ? "email" : field === "phone" ? "tel" : "text"}
                         value={profileData[field]}
                         onChange={(e) => setProfileData({ ...profileData, [field]: e.target.value })}
-                        required
-                        className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-red-600 focus:ring-1 focus:ring-red-100"
+                        // ✅ FIX: Email is disabled/read-only
+                        disabled={field === "email"}
+                        className={`w-full p-2.5 border rounded-lg outline-none ${
+                          field === "email" 
+                            ? "bg-gray-100 text-gray-500 cursor-not-allowed border-gray-200" 
+                            : "focus:ring-2 focus:ring-red-500 focus:border-red-500 border-gray-200"
+                        }`}
                       />
                     </div>
                   ))}
-                  {['address', 'bio'].map((field) => (
+                  {["address", "bio"].map((field) => (
                     <div key={field}>
-                      <label className="block text-gray-800 font-semibold mb-1 capitalize">{field}</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1 capitalize">
+                        {field}
+                      </label>
                       <textarea
                         value={profileData[field]}
                         onChange={(e) => setProfileData({ ...profileData, [field]: e.target.value })}
-                        rows={field === 'bio' ? 4 : 3}
-                        placeholder={field === 'bio' ? 'Tell us about yourself...' : ''}
-                        className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-red-600 focus:ring-1 focus:ring-red-100"
+                        rows={field === "bio" ? 4 : 2}
+                        placeholder={field === "bio" ? "Tell us about yourself..." : ""}
+                        className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
                       />
                     </div>
                   ))}
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="bg-gradient-to-r from-red-600 to-red-700 text-white px-6 py-2 rounded-lg font-semibold hover:shadow-lg transition-transform transform hover:-translate-y-1 disabled:opacity-70 disabled:cursor-not-allowed"
-                  >
-                    {loading ? 'Updating...' : 'Update Profile'}
-                  </button>
+                  <div className="pt-4">
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="px-6 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition shadow-sm disabled:opacity-50 font-medium"
+                    >
+                      {loading ? "Saving..." : "Save Changes"}
+                    </button>
+                  </div>
                 </form>
-              </div>
+              </TabWrapper>
             )}
 
             {/* Password Tab */}
-            {activeTab === 'password' && (
-              <div>
-                <h2 className="text-2xl font-semibold text-gray-800 mb-6">Change Password</h2>
-                <form onSubmit={handlePasswordChange} className="max-w-lg space-y-4">
-                  {['currentPassword', 'newPassword', 'confirmPassword'].map((field, idx) => (
+            {activeTab === "password" && (
+              <TabWrapper>
+                <h2 className="text-2xl font-bold text-gray-800 border-b pb-4 mb-6">Change Password</h2>
+                <form onSubmit={handlePasswordChange} className="space-y-5 max-w-md">
+                  {["currentPassword", "newPassword", "confirmPassword"].map((field, idx) => (
                     <div key={field}>
-                      <label className="block text-gray-800 font-semibold mb-1">
-                        {idx === 0 ? 'Current Password' : idx === 1 ? 'New Password' : 'Confirm New Password'}
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        {idx === 0
+                          ? "Current Password"
+                          : idx === 1
+                          ? "New Password"
+                          : "Confirm New Password"}
                       </label>
                       <input
                         type="password"
                         value={passwordData[field]}
-                        onChange={(e) => setPasswordData({ ...passwordData, [field]: e.target.value })}
+                        onChange={(e) =>
+                          setPasswordData({ ...passwordData, [field]: e.target.value })
+                        }
+                        className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-red-500 outline-none"
                         required
-                        minLength={field === 'newPassword' ? 6 : undefined}
-                        className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-red-600 focus:ring-1 focus:ring-red-100"
+                        minLength={field === "newPassword" ? 6 : undefined}
                       />
                     </div>
                   ))}
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="bg-gradient-to-r from-red-600 to-red-700 text-white px-6 py-2 rounded-lg font-semibold hover:shadow-lg transition-transform transform hover:-translate-y-1 disabled:opacity-70 disabled:cursor-not-allowed"
-                  >
-                    {loading ? 'Changing...' : 'Change Password'}
-                  </button>
+                  <div className="pt-4">
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="px-6 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition shadow-sm disabled:opacity-50 font-medium"
+                    >
+                      {loading ? "Updating..." : "Update Password"}
+                    </button>
+                  </div>
                 </form>
-              </div>
+              </TabWrapper>
             )}
 
             {/* Admin Settings Tab */}
-            {activeTab === 'admin-settings' && (
-              <div>
-                <h2 className="text-2xl font-semibold text-gray-800 mb-6">Admin Settings</h2>
-                <form onSubmit={handleAdminSettingsUpdate} className="max-w-lg space-y-4">
-                  {Object.keys(adminSettings).map((key) => (
-                    <label key={key} className="flex items-center gap-3 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={adminSettings[key]}
-                        onChange={() => setAdminSettings({ ...adminSettings, [key]: !adminSettings[key] })}
-                        className="w-5 h-5 accent-red-600"
-                      />
-                      <span className="text-gray-700 capitalize">{key.replace(/([A-Z])/g, ' $1')}</span>
-                    </label>
-                  ))}
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="bg-gradient-to-r from-red-600 to-red-700 text-white px-6 py-2 rounded-lg font-semibold hover:shadow-lg transition-transform transform hover:-translate-y-1 disabled:opacity-70 disabled:cursor-not-allowed"
-                  >
-                    {loading ? 'Updating...' : 'Update Settings'}
-                  </button>
+            {activeTab === "admin-settings" && (
+              <TabWrapper>
+                <h2 className="text-2xl font-bold text-gray-800 border-b pb-4 mb-6">System Configuration</h2>
+                <form onSubmit={handleAdminSettingsUpdate} className="space-y-5 max-w-lg">
+                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 space-y-4">
+                    {Object.keys(adminSettings).map((key) => (
+                      <label key={key} className="flex items-center gap-3 cursor-pointer p-2 hover:bg-gray-100 rounded">
+                        <input
+                          type="checkbox"
+                          checked={adminSettings[key]}
+                          onChange={() =>
+                            setAdminSettings({ ...adminSettings, [key]: !adminSettings[key] })
+                          }
+                          className="w-5 h-5 accent-red-600 rounded"
+                        />
+                        <span className="text-gray-700 font-medium capitalize">
+                          {key.replace(/([A-Z])/g, " $1")}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                  <div className="pt-4">
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="px-6 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition shadow-sm disabled:opacity-50 font-medium"
+                    >
+                      {loading ? "Saving..." : "Save Configuration"}
+                    </button>
+                  </div>
                 </form>
-              </div>
+              </TabWrapper>
             )}
 
             {/* Profile Picture Tab */}
-            {activeTab === 'profile-pic' && (
-              <div>
-                <h2 className="text-2xl font-semibold text-gray-800 mb-6">Profile Picture</h2>
-                <div className="flex flex-col items-center gap-4">
-                  {profilePicPreview ? (
-                    <img src={profilePicPreview} alt="Profile Preview" className="w-32 h-32 rounded-full object-cover border-2 border-gray-300"/>
-                  ) : (
-                    <div className="w-32 h-32 rounded-full bg-gray-200 border-2 border-gray-300 flex items-center justify-center text-gray-400 text-2xl font-bold">
-                      ?
-                    </div>
-                  )}
-                  <input type="file" onChange={handleFileChange} className="block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-red-600 file:text-white hover:file:bg-red-700"/>
-                  <button
-                    onClick={handleProfilePicUpload}
-                    disabled={loading}
-                    className="bg-gradient-to-r from-red-600 to-red-700 text-white px-6 py-2 rounded-lg font-semibold hover:shadow-lg transition-transform transform hover:-translate-y-1 disabled:opacity-70 disabled:cursor-not-allowed"
-                  >
-                    {loading ? 'Uploading...' : 'Upload'}
-                  </button>
+            {activeTab === "profile-pic" && (
+              <TabWrapper>
+                <h2 className="text-2xl font-bold text-gray-800 border-b pb-4 mb-6">Update Profile Picture</h2>
+                <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50">
+                  <div className="w-40 h-40 rounded-full overflow-hidden shadow-lg mb-6 border-4 border-white">
+                    {profilePicPreview ? (
+                      <img
+                        src={profilePicPreview}
+                        alt="Preview"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-400">
+                        No Image
+                      </div>
+                    )}
+                  </div>
+                  <div className="w-full max-w-xs text-center space-y-4">
+                    <label className="block">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileChange}
+                        className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100 cursor-pointer"
+                      />
+                    </label>
+                    <button
+                      onClick={handleProfilePicUpload}
+                      disabled={loading || !profilePic}
+                      className="w-full px-6 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                    >
+                      {loading ? "Uploading..." : "Upload New Picture"}
+                    </button>
+                    <p className="text-xs text-gray-400">JPG, PNG, JPEG allowed</p>
+                  </div>
                 </div>
-              </div>
-            )}
-
-            {/* Delete Account Tab */}
-            {activeTab === 'delete' && (
-              <div>
-                <h2 className="text-2xl font-semibold text-gray-800 mb-6">Delete Account</h2>
-                <p className="mb-4 text-gray-600">Type <span className="font-bold text-red-600">DELETE</span> to confirm account deletion. This action cannot be undone.</p>
-                <form onSubmit={handleDeleteAccount} className="max-w-lg space-y-4">
-                  <input
-                    type="password"
-                    placeholder="Enter your password"
-                    value={deleteData.password}
-                    onChange={(e) => setDeleteData({ ...deleteData, password: e.target.value })}
-                    required
-                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-red-600 focus:ring-1 focus:ring-red-100"
-                  />
-                  <input
-                    type="text"
-                    placeholder='Type "DELETE" to confirm'
-                    value={deleteData.confirmText}
-                    onChange={(e) => setDeleteData({ ...deleteData, confirmText: e.target.value })}
-                    required
-                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-red-600 focus:ring-1 focus:ring-red-100"
-                  />
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="bg-red-600 text-white px-6 py-2 rounded-lg font-semibold hover:shadow-lg transition-transform transform hover:-translate-y-1 disabled:opacity-70 disabled:cursor-not-allowed"
-                  >
-                    {loading ? 'Deleting...' : 'Delete Account'}
-                  </button>
-                </form>
-              </div>
+              </TabWrapper>
             )}
           </div>
         </div>

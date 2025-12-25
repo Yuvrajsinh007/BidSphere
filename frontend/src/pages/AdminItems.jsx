@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
 import debounce from '../utils/debounce';
@@ -7,14 +7,18 @@ const AdminItems = () => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  
+  // 1. Separate Input State (UI) vs Search State (API)
+  const [inputValue, setInputValue] = useState('');
   const [search, setSearch] = useState('');
+  
   const [status, setStatus] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [deleting, setDeleting] = useState(null);
-  const searchInputRef = useRef(null);
 
-  const debouncedSearch = useCallback(
+  // 2. Debounced function
+  const debouncedUpdate = useCallback(
     debounce((value) => {
       setSearch(value);
       setCurrentPage(1);
@@ -22,8 +26,16 @@ const AdminItems = () => {
     []
   );
 
+  // 3. Smooth Input Handler
+  const handleInputChange = (e) => {
+    const value = e.target.value;
+    setInputValue(value); // Updates UI instantly
+    debouncedUpdate(value); // Updates API search with delay
+  };
+
   useEffect(() => {
     fetchItems();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, search, status]);
 
   const fetchItems = async () => {
@@ -56,11 +68,6 @@ const AdminItems = () => {
     }
   };
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    setCurrentPage(1);
-  };
-
   const getStatusBadge = (item) => {
     const now = new Date();
     const endTime = new Date(item.endTime);
@@ -86,14 +93,6 @@ const AdminItems = () => {
     return `${minutes}m`;
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <span className="text-gray-500 text-lg">Loading items...</span>
-      </div>
-    );
-  }
-
   return (
     <div className="max-w-6xl mx-auto p-6">
       {/* Header */}
@@ -105,15 +104,14 @@ const AdminItems = () => {
       {/* Error */}
       {error && <div className="bg-red-100 text-red-700 p-3 rounded mb-6">{error}</div>}
 
-      {/* Filters */}
+      {/* Filters - Always Visible */}
       <div className="mb-6">
-        <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-4 max-w-2xl mx-auto flex-wrap">
+        <form onSubmit={(e) => e.preventDefault()} className="flex flex-col md:flex-row gap-4 max-w-2xl mx-auto flex-wrap">
           <input
             type="text"
             placeholder="Search items by title..."
-            ref={searchInputRef}
-            defaultValue={search}
-            onChange={(e) => debouncedSearch(e.target.value)}
+            value={inputValue} // Controlled input
+            onChange={handleInputChange} // Smooth typing
             className="flex-1 min-w-[200px] p-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-300"
           />
           <select
@@ -128,78 +126,87 @@ const AdminItems = () => {
         </form>
       </div>
 
-      {/* Items Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
-        {items.map(item => (
-          <div key={item._id} className="bg-white rounded-xl shadow hover:shadow-lg transition-transform transform hover:-translate-y-1 overflow-hidden">
-            <div className="h-48 w-full overflow-hidden relative">
-              {item.images && item.images.length > 0 ? (
-                <img src={item.images[0]} alt={item.title} className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-500 text-lg">
-                  No Image
+      {/* Loading Spinner or Grid */}
+      {loading ? (
+        <div className="flex justify-center items-center h-64">
+           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+        </div>
+      ) : (
+        <>
+          {/* Items Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+            {items.map(item => (
+              <div key={item._id} className="bg-white rounded-xl shadow hover:shadow-lg transition-transform transform hover:-translate-y-1 overflow-hidden">
+                <div className="h-48 w-full overflow-hidden relative">
+                  {item.images && item.images.length > 0 ? (
+                    <img src={item.images[0]} alt={item.title} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-500 text-lg">
+                      No Image
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-            <div className="p-6">
-              <h3 className="text-lg font-semibold text-gray-800 mb-1">{item.title}</h3>
-              <p className="text-gray-500 text-sm mb-1">Seller: {item.seller?.name || 'Unknown'}</p>
-              <p className="text-green-600 font-semibold mb-1">Current Bid: ${item.currentBid || item.basePrice}</p>
-              <p className="text-gray-600 text-sm mb-2">Ends: {new Date(item.endTime).toLocaleDateString()}</p>
+                <div className="p-6">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-1">{item.title}</h3>
+                  <p className="text-gray-500 text-sm mb-1">Seller: {item.seller?.name || 'Unknown'}</p>
+                  <p className="text-green-600 font-semibold mb-1">Current Bid: ${item.currentBid || item.basePrice}</p>
+                  <p className="text-gray-600 text-sm mb-2">Ends: {new Date(item.endTime).toLocaleDateString()}</p>
 
-              <div className="flex justify-between items-center mb-4">
-                {getStatusBadge(item)}
-                {item.status === 'active' && (
-                  <span className="text-red-600 font-semibold text-sm">{formatTimeRemaining(item.endTime)}</span>
-                )}
-              </div>
+                  <div className="flex justify-between items-center mb-4">
+                    {getStatusBadge(item)}
+                    {item.status === 'active' && (
+                      <span className="text-red-600 font-semibold text-sm">{formatTimeRemaining(item.endTime)}</span>
+                    )}
+                  </div>
 
-              <div className="flex flex-col sm:flex-row gap-2">
-                <Link
-                  to={`/item/${item._id}`}
-                  className="flex-1 text-center px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm font-medium"
-                >
-                  View Details
-                </Link>
-                <button
-                  onClick={() => handleDelete(item._id)}
-                  disabled={deleting === item._id}
-                  className="flex-1 text-center px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 text-sm font-medium disabled:opacity-50"
-                >
-                  {deleting === item._id ? 'Deleting...' : 'Delete'}
-                </button>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <Link
+                      to={`/item/${item._id}`}
+                      className="flex-1 text-center px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm font-medium"
+                    >
+                      View Details
+                    </Link>
+                    <button
+                      onClick={() => handleDelete(item._id)}
+                      disabled={deleting === item._id}
+                      className="flex-1 text-center px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 text-sm font-medium disabled:opacity-50"
+                    >
+                      {deleting === item._id ? 'Deleting...' : 'Delete'}
+                    </button>
+                  </div>
+                </div>
               </div>
-            </div>
+            ))}
           </div>
-        ))}
-      </div>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex flex-col md:flex-row justify-center items-center gap-4 mb-6">
-          <button
-            onClick={() => setCurrentPage(currentPage - 1)}
-            disabled={currentPage === 1}
-            className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
-          >
-            Previous
-          </button>
-          <span className="font-semibold text-gray-700">Page {currentPage} of {totalPages}</span>
-          <button
-            onClick={() => setCurrentPage(currentPage + 1)}
-            disabled={currentPage === totalPages}
-            className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
-          >
-            Next
-          </button>
-        </div>
-      )}
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex flex-col md:flex-row justify-center items-center gap-4 mb-6">
+              <button
+                onClick={() => setCurrentPage(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
+              >
+                Previous
+              </button>
+              <span className="font-semibold text-gray-700">Page {currentPage} of {totalPages}</span>
+              <button
+                onClick={() => setCurrentPage(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
+              >
+                Next
+              </button>
+            </div>
+          )}
 
-      {/* No Data */}
-      {items.length === 0 && !loading && (
-        <div className="text-center py-12 text-gray-500 text-lg">
-          No items found.
-        </div>
+          {/* No Data */}
+          {items.length === 0 && (
+            <div className="text-center py-12 text-gray-500 text-lg">
+              No items found.
+            </div>
+          )}
+        </>
       )}
     </div>
   );

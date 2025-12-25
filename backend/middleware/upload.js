@@ -15,21 +15,21 @@ const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: (req, file) => {
     let folder;
+    // Check URL or file fieldname to determine folder
     if (req.originalUrl.includes('profile-pic')) {
-      folder = 'BidSphere/Profile';
-    } else if (req.originalUrl.includes('images')) {
-      folder = 'BidSphere/Item_Images';
+      folder = 'BidCycle/Profile';
+    } else if (req.originalUrl.includes('items') || file.fieldname === 'images') {
+      folder = 'BidCycle/Item_Images';
     } else {
-      folder = 'BidSphere/misc';
+      folder = 'BidCycle/misc';
     }
     return {
       folder: folder,
-      allowed_formats: ['jpg', 'png', 'jpeg'],
+      allowed_formats: ['jpg', 'png', 'jpeg', 'webp'],
       public_id: `${file.fieldname}-${Date.now()}`
     };
   }
 });
-
 
 // File filter
 const fileFilter = (req, file, cb) => {
