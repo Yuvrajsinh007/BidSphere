@@ -16,7 +16,8 @@ const generateToken = (id) => {
 // Register user
 exports.register = async (req, res) => {
   try {
-    const { name, email, password, role } = req.body;
+    // 1. EXTRACT ALL FIELDS FROM REQUEST BODY
+    const { name, email, password, role, phone, address, bio } = req.body;
 
     // Check if user exists
     const userExists = await User.findOne({ email });
@@ -24,12 +25,15 @@ exports.register = async (req, res) => {
       return res.status(400).json({ message: 'User already exists' });
     }
 
-    // Create user
+    // 2. INCLUDE NEW FIELDS WHEN CREATING USER
     const user = await User.create({
       name,
       email,
       password,
       role: role || 'Buyer',
+      phone,   // <--- Added
+      address, // <--- Added
+      bio      // <--- Added
     });
 
     if (user) {
@@ -38,6 +42,9 @@ exports.register = async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        phone: user.phone,     // <--- Added to response
+        address: user.address, // <--- Added to response
+        bio: user.bio,         // <--- Added to response
         token: generateToken(user._id),
       });
     }
@@ -69,11 +76,15 @@ exports.login = async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
+    // 3. INCLUDE NEW FIELDS IN LOGIN RESPONSE
     res.json({
       _id: user._id,
       name: user.name,
       email: user.email,
       role: user.role,
+      phone: user.phone,      // <--- Added
+      address: user.address,  // <--- Added
+      bio: user.bio,          // <--- Added
       isBanned: user.isBanned,
       profilePic: user.profilePic,
       token: generateToken(user._id),

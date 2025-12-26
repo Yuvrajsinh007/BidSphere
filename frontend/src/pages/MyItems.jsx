@@ -22,9 +22,16 @@ const MyItems = () => {
   const [error, setError] = useState('');
   const [filter, setFilter] = useState('all'); // all, active, ended
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // LIVE TIMER STATE
+  const [, setTick] = useState(0);
 
   useEffect(() => {
     fetchMyItems();
+    
+    // Timer interval
+    const timer = setInterval(() => setTick(t => t + 1), 1000);
+    return () => clearInterval(timer);
   }, []);
 
   const fetchMyItems = async () => {
@@ -48,8 +55,13 @@ const MyItems = () => {
     try {
       await api.delete(`/seller/items/${itemId}`);
       setItems(items.filter(item => item._id !== itemId));
+      setError(''); // Clear any previous errors on success
     } catch (error) {
-      setError('Failed to delete item');
+      // FIX 1: Show specific error message from backend (e.g., "Cannot delete item with bids")
+      setError(error.response?.data?.message || 'Failed to delete item');
+      
+      // Auto-hide error after 5 seconds
+      setTimeout(() => setError(''), 5000);
     }
   };
 
@@ -74,9 +86,11 @@ const MyItems = () => {
 
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
     const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
     
-    if (days > 0) return `${days}d ${hours}h`;
-    return `${hours}h ${Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))}m`;
+    if (days > 0) return `${days}d ${hours}h ${minutes}m ${seconds}s`;
+    return `${hours}h ${minutes}m ${seconds}s`;
   };
 
   if (loading) {
@@ -104,7 +118,7 @@ const MyItems = () => {
           </Link>
         </div>
 
-        {/* Stats Summary (Optional Enhancement) */}
+        {/* Stats Summary */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
             <div>
@@ -175,9 +189,9 @@ const MyItems = () => {
 
         {/* Error Message */}
         {error && (
-          <div className="mb-8 p-4 bg-red-50 border border-red-100 rounded-xl flex items-center gap-3 text-red-700">
+          <div className="mb-8 p-4 bg-red-50 border border-red-100 rounded-xl flex items-center gap-3 text-red-700 animate-fadeIn">
             <AlertCircle className="w-5 h-5" />
-            <p>{error}</p>
+            <p className="font-medium">{error}</p>
           </div>
         )}
 
@@ -282,7 +296,8 @@ const MyItems = () => {
                                 </Link>
                             ) : (
                                 <Link
-                                    to={`/seller/items/${item._id}/bids`}
+                                    // FIX 2: Point to Item Detail page to view bids, since no dedicated seller bid page exists
+                                    to={`/item/${item._id}`} 
                                     className="flex items-center justify-center gap-1.5 px-3 py-2 bg-green-50 text-green-600 rounded-lg text-sm font-medium hover:bg-green-100 transition-colors"
                                 >
                                     <Gavel className="w-4 h-4" /> Bids

@@ -52,14 +52,14 @@ const Login = () => {
           className="absolute inset-0 w-full h-full object-cover"
         />
         <div className="relative z-20 flex flex-col justify-between p-12 h-full text-white">
-          <div className="text-2xl font-bold tracking-wider">BidSphere</div>
+          <div className="text-2xl font-bold tracking-wider">BidCycle</div>
           <div>
             <h2 className="text-4xl font-extrabold mb-6">Discover Extraordinary Items</h2>
             <p className="text-lg text-indigo-100 max-w-md">
               Join the world's most trusted marketplace for auctions. Bid, sell, and win with confidence.
             </p>
           </div>
-          <div className="text-sm text-indigo-200">© 2024 BidSphere Inc.</div>
+          <div className="text-sm text-indigo-200">© 2024 BidCycle Inc.</div>
         </div>
       </div>
 
@@ -171,7 +171,7 @@ const Login = () => {
                 <div className="w-full border-t border-gray-300"></div>
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">New to BidSphere?</span>
+                <span className="px-2 bg-white text-gray-500">New to BidCycle?</span>
               </div>
             </div>
             <div className="mt-6">

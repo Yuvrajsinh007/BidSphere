@@ -83,14 +83,14 @@ const Register = () => {
           className="absolute inset-0 w-full h-full object-cover"
         />
         <div className="relative z-20 flex flex-col justify-between p-12 h-full text-white">
-          <div className="text-2xl font-bold tracking-wider">BidSphere</div>
+          <div className="text-2xl font-bold tracking-wider">BidCycle</div>
           <div>
             <h2 className="text-4xl font-extrabold mb-6">Join the Community</h2>
             <p className="text-lg text-indigo-100 max-w-md">
               Create an account today to start bidding on exclusive items or selling your own treasures to a global audience.
             </p>
           </div>
-          <div className="text-sm text-indigo-200">© 2024 BidSphere Inc.</div>
+          <div className="text-sm text-indigo-200">© 2024 BidCycle Inc.</div>
         </div>
       </div>
 
@@ -100,7 +100,7 @@ const Register = () => {
           <div className="text-center">
             <h2 className="text-3xl font-extrabold text-gray-900">Create Account</h2>
             <p className="mt-2 text-sm text-gray-600">
-              Start your journey with BidSphere
+              Start your journey with BidCycle
             </p>
           </div>
 

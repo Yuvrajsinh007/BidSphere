@@ -13,6 +13,7 @@ import Dashboard from './pages/Dashboard';
 import ItemDetail from './pages/ItemDetail';
 import CreateItem from './pages/CreateItem';
 import MyItems from './pages/MyItems';
+import EditItem from './pages/EditItem';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminUsers from './pages/AdminUsers';
 import AdminItems from './pages/AdminItems';
@@ -102,6 +103,15 @@ function App() {
                 element={
                   <ProtectedRoute allowedRoles={['Seller']}>
                     <MyItems />
+                  </ProtectedRoute>
+                } 
+              />
+
+              <Route 
+                path="/edit-item/:id" 
+                element={
+                  <ProtectedRoute allowedRoles={['Seller']}>
+                    <EditItem />
                   </ProtectedRoute>
                 } 
               />

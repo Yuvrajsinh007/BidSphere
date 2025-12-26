@@ -24,7 +24,7 @@ const Landing = () => {
                   <span className="block text-indigo-600 xl:inline">marketplace for auctions</span>
                 </h1>
                 <p className="mt-3 text-base text-gray-500 sm:mt-5 sm:text-lg sm:max-w-xl sm:mx-auto md:mt-5 md:text-xl lg:mx-0">
-                  Discover rare collectibles, unique items, and exclusive deals. BidSphere connects buyers and sellers in a secure, real-time bidding environment.
+                  Discover rare collectibles, unique items, and exclusive deals. BidCycle connects buyers and sellers in a secure, real-time bidding environment.
                 </p>
                 <div className="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start">
                   <div className="rounded-md shadow">
@@ -63,7 +63,7 @@ const Landing = () => {
           <div className="lg:text-center">
             <h2 className="text-base text-indigo-600 font-semibold tracking-wide uppercase">Features</h2>
             <p className="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-gray-900 sm:text-4xl">
-              Why Choose BidSphere?
+              Why Choose BidCycle?
             </p>
           </div>
 
@@ -126,7 +126,7 @@ const Landing = () => {
         <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 md:flex md:items-center md:justify-between lg:px-8">
           <div className="flex justify-center space-x-6 md:order-2">
             <span className="text-gray-400 hover:text-gray-500">
-              © 2024 BidSphere, Inc. All rights reserved.
+              © 2024 BidCycle, Inc. All rights reserved.
             </span>
           </div>
           <div className="mt-8 md:mt-0 md:order-1">
